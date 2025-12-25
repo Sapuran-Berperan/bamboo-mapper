@@ -15,7 +15,7 @@ import 'package:bamboo_app/utils/textfield_validator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart';
 
 class ModalBottomSheet extends StatefulWidget {
   final BuildContext parentContext;

@@ -4,7 +4,8 @@ import 'package:bamboo_app/src/app/use_cases/marker_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:bamboo_app/src/app/blocs/marker_state.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -14,8 +15,8 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  GoogleMapController? _controller;
-  Set<Marker> _markers = {};
+  final MapController _mapController = MapController();
+  List<Marker> _markers = [];
   LatLng? _sLocation;
 
   @override
@@ -42,34 +43,25 @@ class _DashboardPageState extends State<DashboardPage> {
             ? const Center(child: CircularProgressIndicator())
             : Stack(
                 children: [
-                  GoogleMap(
-                    initialCameraPosition: CameraPosition(
-                      target: _sLocation!, // Use the user's current location
-                      zoom: 15,
+                  FlutterMap(
+                    mapController: _mapController,
+                    options: MapOptions(
+                      initialCenter: _sLocation!,
+                      initialZoom: 15,
                     ),
-                    zoomControlsEnabled: false,
-                    myLocationEnabled: true,
-                    myLocationButtonEnabled: false,
-                    compassEnabled: false,
-                    markers: _markers,
-                    onMapCreated: (GoogleMapController controller) {
-                      setState(() => _controller = controller);
-                    },
+                    children: [
+                      TileLayer(
+                        urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        userAgentPackageName: 'com.example.bamboo_app',
+                      ),
+                      MarkerLayer(markers: _markers),
+                    ],
                   ),
-                  if (_controller != null)
-                    Positioned(
-                      bottom: 20,
-                      right: 20,
-                      child: FloatingMapButton(controller: _controller!),
-                    ),
-                  // Positioned(
-                  //   top: 40,
-                  //   right: 20,
-                  //   child: SubmitButton(
-                  //       onTap: () async =>
-                  //           await ServiceMarker().testDeleteImageMarker(),
-                  //       text: 'Refresh'),
-                  // ),
+                  Positioned(
+                    bottom: 20,
+                    right: 20,
+                    child: FloatingMapButton(controller: _mapController),
+                  ),
                 ],
               ));
       },

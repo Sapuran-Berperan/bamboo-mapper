@@ -3,15 +3,16 @@ import 'package:bamboo_app/src/app/presentation/widgets/atom/my_location_button.
 import 'package:bamboo_app/src/app/presentation/widgets/organism/modal_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
 class FloatingMapButton extends StatelessWidget {
   const FloatingMapButton({
     super.key,
-    required GoogleMapController controller,
+    required MapController controller,
   }) : _controller = controller;
 
-  final GoogleMapController _controller;
+  final MapController _controller;
 
   @override
   Widget build(BuildContext context) {
@@ -19,9 +20,9 @@ class FloatingMapButton extends StatelessWidget {
       children: [
         MyLocationButton(onTap: () async {
           final position = await Geolocator.getCurrentPosition();
-          _controller.animateCamera(
-            CameraUpdate.newLatLng(
-                LatLng(position.latitude, position.longitude)),
+          _controller.move(
+            LatLng(position.latitude, position.longitude),
+            _controller.camera.zoom,
           );
         }),
         const Padding(padding: EdgeInsets.only(top: 15)),
