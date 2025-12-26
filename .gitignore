@@ -45,3 +45,6 @@ app.*.map.json
 
 # VS Code SETTINGS
 .vscode/settings.json
+
+#metadata
+.metadata
