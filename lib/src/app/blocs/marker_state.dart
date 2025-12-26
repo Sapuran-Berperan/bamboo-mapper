@@ -15,8 +15,9 @@ class AddMarkerData extends MarkerEvent {
 
 class UpdateMarkerData extends MarkerEvent {
   final EntitiesMarker marker;
+  final bool keepExistingImage;
 
-  UpdateMarkerData({required this.marker});
+  UpdateMarkerData({required this.marker, this.keepExistingImage = false});
 }
 
 class DeleteMarkerData extends MarkerEvent {
@@ -46,7 +47,7 @@ class MarkerStateBloc extends Bloc<MarkerEvent, MarkerState> {
     });
 
     on<UpdateMarkerData>((event, emit) async {
-      await ServiceMarker().updateMarker(event.marker);
+      await ServiceMarker().updateMarker(event.marker, keepExistingImage: event.keepExistingImage);
       final markers = await ServiceMarker().fetchListMarker(defaultUser.uid);
 
       emit(MarkerState(markers: markers));

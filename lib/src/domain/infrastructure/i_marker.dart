@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:bamboo_app/src/domain/entities/e_marker.dart';
 import 'package:bamboo_app/src/domain/repositories/r_marker.dart';
+import 'package:path/path.dart' as p;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
@@ -9,19 +10,23 @@ class InfrastructureMarker implements RepositoryPolygon {
   final Uuid _uuid = const Uuid();
   final db = Supabase.instance.client;
 
+  /// Extracts a unique filename from a file path using the path package.
+  /// Adds timestamp prefix to ensure uniqueness.
+  String _extractUniqueFilename(String filePath) {
+    if (filePath.isEmpty) return '';
+    final filename = p.basename(filePath);
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    return '$timestamp/$filename';
+  }
+
   @override
   Future<EntitiesMarker?> createMarker(EntitiesMarker marker) async {
     String publicURL = '';
-    String shortImageURL = '';
-    if (marker.urlImage.contains('file_picker/')) {
-      shortImageURL = marker.urlImage.split('file_picker/').last;
-    }
-    if (marker.urlImage.contains('cache/')) {
-      shortImageURL = marker.urlImage.split('cache/').last;
-    }
+    String shortImageURL = _extractUniqueFilename(marker.urlImage);
+
     try {
-      if (marker.urlImage.isNotEmpty) {
-        final imageRes = await createImageMarker(marker.urlImage);
+      if (marker.urlImage.isNotEmpty && shortImageURL.isNotEmpty) {
+        final imageRes = await createImageMarker(marker.urlImage, shortImageURL);
         if (!imageRes) {
           print('Error: Image not uploaded');
         }
@@ -69,36 +74,31 @@ class InfrastructureMarker implements RepositoryPolygon {
   }
 
   @override
-  Future<EntitiesMarker?> updateMarker(EntitiesMarker marker) async {
+  Future<EntitiesMarker?> updateMarker(EntitiesMarker marker, {bool keepExistingImage = false}) async {
     String publicURL = '';
     final oldMarker = await readMarker(marker.uid);
-    String shortImageURL = '';
-    if (marker.urlImage.contains('file_picker/')) {
-      shortImageURL = marker.urlImage.split('file_picker/').last;
-    }
-    if (marker.urlImage.contains('cache/')) {
-      shortImageURL = marker.urlImage.split('cache/').last;
-    }
+    String shortImageURL = _extractUniqueFilename(marker.urlImage);
+
     try {
-      if (!marker.urlImage.contains('NULL:')) {
-        if (marker.urlImage.isNotEmpty) {
-          final imageRes =
-              await updateImageMarker(marker.urlImage, oldMarker!.urlImage);
-          if (!imageRes) {
-            print('Error: Image not updated');
-          }
-          publicURL =
-              db.storage.from('bamboo_images').getPublicUrl(shortImageURL);
+      if (keepExistingImage) {
+        // Keep the existing image URL from the old marker
+        publicURL = oldMarker?.urlImage ?? '';
+      } else if (marker.urlImage.isNotEmpty && shortImageURL.isNotEmpty) {
+        // Upload new image and delete old one
+        final imageRes =
+            await updateImageMarker(marker.urlImage, shortImageURL, oldMarker?.urlImage ?? '');
+        if (!imageRes) {
+          print('Error: Image not updated');
         }
+        publicURL =
+            db.storage.from('bamboo_images').getPublicUrl(shortImageURL);
       }
+
       final res = await db
           .from('marker')
           .update(marker
               .copyWith(
-                uid: _uuid.v4(),
-                urlImage: marker.urlImage.contains('NULL:')
-                    ? marker.urlImage.split('NULL:').last
-                    : publicURL,
+                urlImage: publicURL,
               )
               .toJSON())
           .eq('uid', marker.uid)
@@ -124,52 +124,56 @@ class InfrastructureMarker implements RepositoryPolygon {
   }
 
   @override
-  Future<bool> createImageMarker(String url) async {
-    final File imageFile = File(url);
-    String shortFileURL = '';
-    if (url.contains('file_picker/')) {
-      shortFileURL = url.split('file_picker/').last;
+  Future<bool> createImageMarker(String localPath, String storagePath) async {
+    final File imageFile = File(localPath);
+
+    if (!await imageFile.exists()) {
+      print('Error: Image file does not exist at $localPath');
+      return false;
     }
-    if (url.contains('cache/')) {
-      shortFileURL = url.split('cache/').last;
-    }
-    print('url: $url');
-    print('short url: $shortFileURL');
+
+    print('Uploading image from: $localPath');
+    print('Storage path: $storagePath');
+
     try {
-      await db.storage.from('bamboo_images').upload(shortFileURL, imageFile);
+      await db.storage.from('bamboo_images').upload(storagePath, imageFile);
       return true;
     } catch (e) {
-      print('Error: $e');
+      print('Error uploading image: $e');
       return false;
     }
   }
 
   @override
-  Future<bool> updateImageMarker(String url, String oldUrl) async {
-    final File imageFile = File(url);
-    String shortImageURL = '';
-    if (url.contains('file_picker/')) {
-      shortImageURL = url.split('file_picker/').last;
-    }
-    if (url.contains('cache/')) {
-      shortImageURL = url.split('cache/').last;
+  Future<bool> updateImageMarker(String localPath, String storagePath, String oldImageUrl) async {
+    final File imageFile = File(localPath);
+
+    if (!await imageFile.exists()) {
+      print('Error: Image file does not exist at $localPath');
+      return false;
     }
 
-    try {
-      final String relativePath = oldUrl.split('bamboo_images/').last;
-      await db.storage.from('bamboo_images').remove([relativePath]);
-    } catch (e) {
-      print('Error: $e');
+    // Delete old image if exists
+    if (oldImageUrl.isNotEmpty && oldImageUrl.contains('bamboo_images/')) {
+      try {
+        final String relativePath = oldImageUrl.split('bamboo_images/').last;
+        await db.storage.from('bamboo_images').remove([relativePath]);
+      } catch (e) {
+        print('Error deleting old image: $e');
+        // Continue with upload even if delete fails
+      }
     }
+
+    // Upload new image
     try {
       await db.storage.from('bamboo_images').upload(
-            shortImageURL,
+            storagePath,
             imageFile,
             fileOptions: const FileOptions(upsert: true),
           );
       return true;
     } catch (e) {
-      print('Error: $e');
+      print('Error uploading image: $e');
       return false;
     }
   }

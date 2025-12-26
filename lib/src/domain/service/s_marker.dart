@@ -16,8 +16,8 @@ class ServiceMarker {
     await InfrastructureMarker().createMarker(marker);
   }
 
-  Future<void> updateMarker(EntitiesMarker marker) async {
-    await InfrastructureMarker().updateMarker(marker);
+  Future<void> updateMarker(EntitiesMarker marker, {bool keepExistingImage = false}) async {
+    await InfrastructureMarker().updateMarker(marker, keepExistingImage: keepExistingImage);
   }
 
   Future<void> deleteMarker(EntitiesMarker marker) async {
