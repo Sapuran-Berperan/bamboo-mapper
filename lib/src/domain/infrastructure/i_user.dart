@@ -1,5 +1,6 @@
 import 'package:bamboo_app/src/domain/entities/e_user.dart';
 import 'package:bamboo_app/src/domain/repositories/r_user.dart';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
@@ -17,7 +18,7 @@ class InfrastructureUser implements RepositoryUser {
           .single();
       return EntitiesUser.fromJSON(res);
     } catch (e) {
-      print('Error: $e');
+      debugPrint('Error: $e');
       return null;
     }
   }
@@ -29,7 +30,7 @@ class InfrastructureUser implements RepositoryUser {
           await db.from('authentication').select().eq('email', email).single();
       return EntitiesUser.fromJSON(res);
     } catch (e) {
-      print('Error: $e');
+      debugPrint('Error: $e');
       return null;
     }
   }

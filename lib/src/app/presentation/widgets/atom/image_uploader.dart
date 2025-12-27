@@ -28,12 +28,12 @@ class _ImageUploaderState extends State<ImageUploader> {
           _image = image;
         });
         widget.onImageSelected?.call(image);
-        print('Image selected: ${image.path}');
+        debugPrint('Image selected: ${image.path}');
       } else {
-        print('No image captured');
+        debugPrint('No image captured');
       }
     } catch (e) {
-      print('Error capturing image: $e');
+      debugPrint('Error capturing image: $e');
     }
   }
 
@@ -47,12 +47,12 @@ class _ImageUploaderState extends State<ImageUploader> {
           _image = image;
         });
         widget.onImageSelected?.call(image);
-        print('Image selected: ${image.path}');
+        debugPrint('Image selected from gallery: ${image.path}');
       } else {
-        print('No image selected');
+        debugPrint('No image selected');
       }
     } catch (e) {
-      print('Error selecting image: $e');
+      debugPrint('Error selecting image: $e');
     }
   }
 

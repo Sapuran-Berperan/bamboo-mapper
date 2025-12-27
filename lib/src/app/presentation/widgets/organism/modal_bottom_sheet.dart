@@ -175,6 +175,9 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
     if (!_validateForm()) return;
     if (_isSubmitting) return; // Prevent double-tap
 
+    // Store BLoC reference before async operation
+    final markerBloc = BlocProvider.of<MarkerStateBloc>(widget.parentContext);
+
     setState(() {
       _isSubmitting = true;
       _pendingOperation = _isEditMode ? 'update' : 'add';
@@ -182,12 +185,14 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
 
     try {
       final position = await GpsController().getCurrentPosition();
+      if (!mounted) return;
+
       LatLng currentPosition = LatLng(position.latitude, position.longitude);
 
       setState(() => _waitingForResponse = true);
 
       if (!_isEditMode) {
-        BlocProvider.of<MarkerStateBloc>(widget.parentContext).add(
+        markerBloc.add(
           AddMarkerData(
             marker: EntitiesMarker(
               uid: '',
@@ -206,7 +211,7 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
           ),
         );
       } else {
-        BlocProvider.of<MarkerStateBloc>(widget.parentContext).add(
+        markerBloc.add(
           UpdateMarkerData(
             marker: EntitiesMarker(
               uid: marker!.uid,
@@ -226,6 +231,7 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
         );
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _isSubmitting = false;
         _waitingForResponse = false;
@@ -249,8 +255,12 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
   Future<void> _handleDelete(EntitiesMarker marker) async {
     if (_isSubmitting) return; // Prevent double-tap
 
+    // Store BLoC reference before async operation
+    final markerBloc = BlocProvider.of<MarkerStateBloc>(widget.parentContext);
+
     final confirmed = await _showDeleteConfirmation(context);
     if (!confirmed) return;
+    if (!mounted) return;
 
     setState(() {
       _isSubmitting = true;
@@ -258,8 +268,7 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
       _waitingForResponse = true;
     });
 
-    BlocProvider.of<MarkerStateBloc>(widget.parentContext)
-        .add(DeleteMarkerData(marker: marker));
+    markerBloc.add(DeleteMarkerData(marker: marker));
   }
 
   @override
@@ -308,7 +317,7 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
                 Positioned.fill(
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.6),
+                      color: Colors.black.withValues(alpha: 0.6),
                       borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(20),
                         topRight: Radius.circular(20),

@@ -8,7 +8,7 @@ class UiMode {
       bodyMedium: TextStyle(color: Colors.white70),
     ),
     appBarTheme: const AppBarTheme(
-      color: Colors.teal,
+      backgroundColor: Colors.teal,
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ButtonStyle(
@@ -43,7 +43,7 @@ class UiMode {
       bodyMedium: TextStyle(color: Colors.black54),
     ),
     appBarTheme: const AppBarTheme(
-      color: Colors.teal,
+      backgroundColor: Colors.teal,
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ButtonStyle(

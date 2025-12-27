@@ -43,7 +43,7 @@ class _DashboardPageState extends State<DashboardPage> {
         setState(() => _currentLocation = newPosition);
       },
       onError: (error) {
-        print('Location stream error: $error');
+        debugPrint('Location stream error: $error');
       },
     );
   }
@@ -123,8 +123,8 @@ class _DashboardPageState extends State<DashboardPage> {
                         CircleMarker(
                           point: _currentLocation!,
                           radius: 40,
-                          color: Colors.blue.withOpacity(0.15),
-                          borderColor: Colors.blue.withOpacity(0.3),
+                          color: Colors.blue.withValues(alpha: 0.15),
+                          borderColor: Colors.blue.withValues(alpha: 0.3),
                           borderStrokeWidth: 1,
                         ),
                         // Inner circle (precise location)
@@ -147,7 +147,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary.withOpacity(0.9),
+                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.9),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(
@@ -191,7 +191,7 @@ class _DashboardPageState extends State<DashboardPage> {
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
+                              color: Colors.black.withValues(alpha: 0.2),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),

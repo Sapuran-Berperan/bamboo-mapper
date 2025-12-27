@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:bamboo_app/src/domain/entities/e_marker.dart';
 import 'package:bamboo_app/src/domain/repositories/r_marker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
@@ -28,7 +29,7 @@ class InfrastructureMarker implements RepositoryPolygon {
       if (marker.urlImage.isNotEmpty && shortImageURL.isNotEmpty) {
         final imageRes = await createImageMarker(marker.urlImage, shortImageURL);
         if (!imageRes) {
-          print('Warning: Image not uploaded, continuing without image');
+          debugPrint('Warning: Image not uploaded, continuing without image');
         } else {
           publicURL =
               db.storage.from('bamboo_images').getPublicUrl(shortImageURL);
@@ -46,7 +47,7 @@ class InfrastructureMarker implements RepositoryPolygon {
           .single();
       return EntitiesMarker.fromJSON(res);
     } catch (e) {
-      print('Error creating marker: $e');
+      debugPrint('Error creating marker: $e');
       rethrow; // Rethrow so the service/bloc can catch it
     }
   }
@@ -57,7 +58,7 @@ class InfrastructureMarker implements RepositoryPolygon {
       final res = await db.from('marker').select().eq('uid', uid).single();
       return EntitiesMarker.fromJSON(res);
     } catch (e) {
-      print('Error reading marker: $e');
+      debugPrint('Error reading marker: $e');
       rethrow;
     }
   }
@@ -69,7 +70,7 @@ class InfrastructureMarker implements RepositoryPolygon {
           await db.from('marker').select().contains('uidUser', [uidUser]);
       return res.map((e) => EntitiesMarker.fromJSON(e)).toList();
     } catch (e) {
-      print('Error reading marker list: $e');
+      debugPrint('Error reading marker list: $e');
       return []; // Return empty list instead of [null] for safer handling
     }
   }
@@ -95,7 +96,7 @@ class InfrastructureMarker implements RepositoryPolygon {
           final imageRes =
               await updateImageMarker(marker.urlImage, shortImageURL, oldMarker?.urlImage ?? '');
           if (!imageRes) {
-            print('Warning: Image not updated, keeping old image');
+            debugPrint('Warning: Image not updated, keeping old image');
             publicURL = oldMarker?.urlImage ?? '';
           } else {
             publicURL =
@@ -116,7 +117,7 @@ class InfrastructureMarker implements RepositoryPolygon {
           .single();
       return EntitiesMarker.fromJSON(res);
     } catch (e) {
-      print('Error updating marker: $e');
+      debugPrint('Error updating marker: $e');
       rethrow; // Rethrow so the service/bloc can catch it
     }
   }
@@ -129,7 +130,7 @@ class InfrastructureMarker implements RepositoryPolygon {
       }
       await db.from('marker').delete().eq('uid', marker.uid);
     } catch (e) {
-      print('Error deleting marker: $e');
+      debugPrint('Error deleting marker: $e');
       rethrow; // Rethrow so the service/bloc can catch it
     }
   }
@@ -139,18 +140,18 @@ class InfrastructureMarker implements RepositoryPolygon {
     final File imageFile = File(localPath);
 
     if (!await imageFile.exists()) {
-      print('Error: Image file does not exist at $localPath');
+      debugPrint('Error: Image file does not exist at $localPath');
       return false;
     }
 
-    print('Uploading image from: $localPath');
-    print('Storage path: $storagePath');
+    debugPrint('Uploading image from: $localPath');
+    debugPrint('Storage path: $storagePath');
 
     try {
       await db.storage.from('bamboo_images').upload(storagePath, imageFile);
       return true;
     } catch (e) {
-      print('Error uploading image: $e');
+      debugPrint('Error uploading image: $e');
       return false;
     }
   }
@@ -160,7 +161,7 @@ class InfrastructureMarker implements RepositoryPolygon {
     final File imageFile = File(localPath);
 
     if (!await imageFile.exists()) {
-      print('Error: Image file does not exist at $localPath');
+      debugPrint('Error: Image file does not exist at $localPath');
       return false;
     }
 
@@ -170,7 +171,7 @@ class InfrastructureMarker implements RepositoryPolygon {
         final String relativePath = oldImageUrl.split('bamboo_images/').last;
         await db.storage.from('bamboo_images').remove([relativePath]);
       } catch (e) {
-        print('Error deleting old image: $e');
+        debugPrint('Error deleting old image: $e');
         // Continue with upload even if delete fails
       }
     }
@@ -184,7 +185,7 @@ class InfrastructureMarker implements RepositoryPolygon {
           );
       return true;
     } catch (e) {
-      print('Error uploading image: $e');
+      debugPrint('Error uploading image: $e');
       return false;
     }
   }
@@ -196,7 +197,7 @@ class InfrastructureMarker implements RepositoryPolygon {
     try {
       await db.storage.from('bamboo_images').remove([relativePath]);
     } catch (e) {
-      print('Error deleting image: $e');
+      debugPrint('Error deleting image: $e');
     }
   }
 
@@ -206,9 +207,9 @@ class InfrastructureMarker implements RepositoryPolygon {
       final res = await db.storage.from('bamboo_images').remove([
         'https://gysbnohwkzlxhlqcfhwn.supabase.co/storage/v1/object/public/bamboo_images/1735372142085/IMG-20241228-WA0044.jpg'
       ]);
-      print('Response: $res');
+      debugPrint('Response: $res');
     } catch (e) {
-      print('Error: $e');
+      debugPrint('Error: $e');
     }
   }
 }
