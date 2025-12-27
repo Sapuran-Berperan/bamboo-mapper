@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:bamboo_app/src/app/presentation/widgets/atom/modal_snackbar.dart';
 import 'package:bamboo_app/src/app/presentation/widgets/organism/floating_map_button.dart';
 import 'package:bamboo_app/src/app/use_cases/gps_controller.dart';
@@ -17,19 +18,38 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   final MapController _mapController = MapController();
+  final GpsController _gpsController = GpsController();
   List<Marker> _markers = [];
-  LatLng? _sLocation;
+  LatLng? _currentLocation;
+  StreamSubscription<LatLng>? _locationSubscription;
 
   @override
   void initState() {
     super.initState();
-    _getUserLocation();
+    _initializeLocation();
     BlocProvider.of<MarkerStateBloc>(context).add(FetchMarkerData());
   }
 
-  Future<void> _getUserLocation() async {
-    LatLng position = await GpsController().getCurrentPosition();
-    setState(() => _sLocation = position);
+  Future<void> _initializeLocation() async {
+    // Get initial position
+    LatLng position = await _gpsController.getCurrentPosition();
+    setState(() => _currentLocation = position);
+
+    // Start listening for real-time location updates
+    _locationSubscription = _gpsController.getPositionStream().listen(
+      (newPosition) {
+        setState(() => _currentLocation = newPosition);
+      },
+      onError: (error) {
+        print('Location stream error: $error');
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _locationSubscription?.cancel();
+    super.dispose();
   }
 
   @override
@@ -45,7 +65,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 markerStateBloc: BlocProvider.of<MarkerStateBloc>(context))
             .fetchListMarker(state.markers, context);
 
-        final isInitialLoading = _sLocation == null || state.isLoading;
+        final isInitialLoading = _currentLocation == null || state.isLoading;
 
         if (isInitialLoading) {
           return Center(
@@ -55,7 +75,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 const CircularProgressIndicator(),
                 const SizedBox(height: 16),
                 Text(
-                  _sLocation == null
+                  _currentLocation == null
                       ? 'Mendapatkan lokasi...'
                       : 'Memuat data...',
                   style: Theme.of(context).textTheme.bodyMedium,
@@ -70,7 +90,7 @@ class _DashboardPageState extends State<DashboardPage> {
             FlutterMap(
               mapController: _mapController,
               options: MapOptions(
-                initialCenter: _sLocation!,
+                initialCenter: _currentLocation!,
                 initialZoom: 15,
               ),
               children: [
@@ -78,8 +98,44 @@ class _DashboardPageState extends State<DashboardPage> {
                   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: 'com.example.bamboo_app',
                 ),
+                // Circle layer for current location
+                CircleLayer(
+                  circles: [
+                    // Outer circle (accuracy indicator)
+                    CircleMarker(
+                      point: _currentLocation!,
+                      radius: 40,
+                      color: Colors.blue.withOpacity(0.15),
+                      borderColor: Colors.blue.withOpacity(0.3),
+                      borderStrokeWidth: 1,
+                    ),
+                    // Inner circle (precise location)
+                    CircleMarker(
+                      point: _currentLocation!,
+                      radius: 8,
+                      color: Colors.blue,
+                      borderColor: Colors.white,
+                      borderStrokeWidth: 3,
+                    ),
+                  ],
+                ),
                 MarkerLayer(markers: _markers),
               ],
+            ),
+            // Location indicator button
+            Positioned(
+              bottom: 90,
+              right: 20,
+              child: FloatingActionButton.small(
+                heroTag: 'locationBtn',
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                onPressed: () {
+                  if (_currentLocation != null) {
+                    _mapController.move(_currentLocation!, 17);
+                  }
+                },
+                child: const Icon(Icons.my_location, size: 20),
+              ),
             ),
             Positioned(
               bottom: 20,
