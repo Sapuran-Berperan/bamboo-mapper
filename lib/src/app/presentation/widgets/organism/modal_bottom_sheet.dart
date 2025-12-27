@@ -44,7 +44,8 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
   void _onImageChanged(File? image) => _image = image;
 
   bool _isSubmitting = false;
-  MarkerStatus? _previousStatus;
+  bool _waitingForResponse = false;  // Track if we're waiting for BLoC response
+  String? _pendingOperation;  // Track which operation we're waiting for
 
   @override
   void initState() {
@@ -64,38 +65,46 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
     }
   }
 
-  String _getLoadingMessage(MarkerState state) {
-    if (state.isAdding) return 'Menambahkan data...';
-    if (state.isUpdating) return 'Mengupdate data...';
-    if (state.isDeleting) return 'Menghapus data...';
+  String _getLoadingMessage() {
+    if (_pendingOperation == 'add') return 'Menambahkan data...';
+    if (_pendingOperation == 'update') return 'Mengupdate data...';
+    if (_pendingOperation == 'delete') return 'Menghapus data...';
     return 'Memproses...';
   }
 
   void _handleStateChange(BuildContext context, MarkerState state) {
-    if (_isSubmitting) {
-      if (state.status == MarkerStatus.loaded) {
-        _isSubmitting = false;
-        String message = 'Berhasil!';
-        if (_previousStatus == MarkerStatus.adding) {
-          message = 'Data berhasil ditambahkan';
-        } else if (_previousStatus == MarkerStatus.updating) {
-          message = 'Data berhasil diupdate';
-        } else if (_previousStatus == MarkerStatus.deleting) {
-          message = 'Data berhasil dihapus';
-        }
-        ModalSnackbar(widget.parentContext).show(message);
-        if (widget.uidMarker == null) {
-          router.pop();
-        } else {
-          router.pop();
-          router.pop();
-        }
-      } else if (state.hasError) {
-        _isSubmitting = false;
-        ModalSnackbar(widget.parentContext).show(state.errorMessage ?? 'Terjadi kesalahan');
+    // Only handle state changes if we're actually waiting for a response
+    if (!_waitingForResponse) return;
+
+    // Check if operation completed (state changed from processing to loaded/error)
+    if (state.status == MarkerStatus.loaded) {
+      _isSubmitting = false;
+      _waitingForResponse = false;
+
+      String message = 'Berhasil!';
+      if (_pendingOperation == 'add') {
+        message = 'Data berhasil ditambahkan';
+      } else if (_pendingOperation == 'update') {
+        message = 'Data berhasil diupdate';
+      } else if (_pendingOperation == 'delete') {
+        message = 'Data berhasil dihapus';
       }
+
+      _pendingOperation = null;
+      ModalSnackbar(widget.parentContext).show(message);
+
+      if (widget.uidMarker == null) {
+        router.pop();
+      } else {
+        router.pop();
+        router.pop();
+      }
+    } else if (state.hasError) {
+      _isSubmitting = false;
+      _waitingForResponse = false;
+      _pendingOperation = null;
+      ModalSnackbar(widget.parentContext).show(state.errorMessage ?? 'Terjadi kesalahan');
     }
-    _previousStatus = state.status;
   }
 
   @override
@@ -107,7 +116,7 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
       child: BlocConsumer<MarkerStateBloc, MarkerState>(
         listener: _handleStateChange,
         builder: (context, state) {
-        final isProcessing = state.isProcessing && _isSubmitting;
+        final isProcessing = _isSubmitting;
 
         return Stack(
           children: [
@@ -140,7 +149,7 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
                         const CircularProgressIndicator(color: Colors.white),
                         const SizedBox(height: 16),
                         Text(
-                          _getLoadingMessage(state),
+                          _getLoadingMessage(),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 16,
@@ -300,13 +309,19 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
           onTap: isProcessing
               ? null
               : () async {
-                  setState(() => _isSubmitting = true);
+                  setState(() {
+                    _isSubmitting = true;
+                    _pendingOperation = widget.uidMarker == null ? 'add' : 'update';
+                  });
 
                   final position = await GpsController().getCurrentPosition();
                   LatLng currentPosition = LatLng(
                     position.latitude,
                     position.longitude,
                   );
+
+                  // Set waiting flag right before dispatching event
+                  setState(() => _waitingForResponse = true);
 
                   if (widget.uidMarker == null) {
                     BlocProvider.of<MarkerStateBloc>(widget.parentContext).add(
@@ -382,7 +397,11 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
                 onTap: isProcessing
                     ? null
                     : () {
-                        setState(() => _isSubmitting = true);
+                        setState(() {
+                          _isSubmitting = true;
+                          _pendingOperation = 'delete';
+                          _waitingForResponse = true;
+                        });
                         BlocProvider.of<MarkerStateBloc>(widget.parentContext)
                             .add(DeleteMarkerData(marker: marker!));
                       },
