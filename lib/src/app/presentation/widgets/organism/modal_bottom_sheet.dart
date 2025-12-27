@@ -100,9 +100,13 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<MarkerStateBloc, MarkerState>(
-      listener: _handleStateChange,
-      builder: (context, state) {
+    // Use BlocProvider.value to provide the BLoC from parent context
+    // since modal bottom sheet has its own widget tree
+    return BlocProvider.value(
+      value: BlocProvider.of<MarkerStateBloc>(widget.parentContext),
+      child: BlocConsumer<MarkerStateBloc, MarkerState>(
+        listener: _handleStateChange,
+        builder: (context, state) {
         final isProcessing = state.isProcessing && _isSubmitting;
 
         return Stack(
@@ -149,7 +153,8 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
               ),
           ],
         );
-      },
+        },
+      ),
     );
   }
 
