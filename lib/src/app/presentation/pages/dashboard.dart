@@ -23,6 +23,7 @@ class _DashboardPageState extends State<DashboardPage> {
   List<Marker> _markers = [];
   LatLng? _currentLocation;
   StreamSubscription<LatLng>? _locationSubscription;
+  bool _isMapReady = false;
 
   @override
   void initState() {
@@ -45,6 +46,12 @@ class _DashboardPageState extends State<DashboardPage> {
         print('Location stream error: $error');
       },
     );
+  }
+
+  void _centerOnCurrentLocation() {
+    if (_currentLocation != null && _isMapReady) {
+      _mapController.move(_currentLocation!, 17);
+    }
   }
 
   @override
@@ -94,7 +101,12 @@ class _DashboardPageState extends State<DashboardPage> {
                   mapController: _mapController,
                   options: MapOptions(
                     initialCenter: _currentLocation!,
-                    initialZoom: 15,
+                    initialZoom: 17,
+                    onMapReady: () {
+                      setState(() => _isMapReady = true);
+                      // Center on current location when map is ready
+                      _centerOnCurrentLocation();
+                    },
                   ),
                   children: [
                     TileLayer(
@@ -154,25 +166,14 @@ class _DashboardPageState extends State<DashboardPage> {
                     ),
                   ),
                 ),
-                // Location indicator button
-                Positioned(
-                  bottom: 90,
-                  right: 20,
-                  child: FloatingActionButton.small(
-                    heroTag: 'locationBtn',
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    onPressed: () {
-                      if (_currentLocation != null) {
-                        _mapController.move(_currentLocation!, 17);
-                      }
-                    },
-                    child: const Icon(Icons.my_location, size: 20),
-                  ),
-                ),
+                // Floating buttons (My Location + Add)
                 Positioned(
                   bottom: 20,
                   right: 20,
-                  child: FloatingMapButton(controller: _mapController),
+                  child: FloatingMapButton(
+                    controller: _mapController,
+                    currentLocation: _currentLocation,
+                  ),
                 ),
                 if (state.isProcessing)
                   Positioned(
