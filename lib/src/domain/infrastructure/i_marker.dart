@@ -28,10 +28,11 @@ class InfrastructureMarker implements RepositoryPolygon {
       if (marker.urlImage.isNotEmpty && shortImageURL.isNotEmpty) {
         final imageRes = await createImageMarker(marker.urlImage, shortImageURL);
         if (!imageRes) {
-          print('Error: Image not uploaded');
+          print('Warning: Image not uploaded, continuing without image');
+        } else {
+          publicURL =
+              db.storage.from('bamboo_images').getPublicUrl(shortImageURL);
         }
-        publicURL =
-            db.storage.from('bamboo_images').getPublicUrl(shortImageURL);
       }
       final res = await db
           .from('marker')
@@ -45,8 +46,8 @@ class InfrastructureMarker implements RepositoryPolygon {
           .single();
       return EntitiesMarker.fromJSON(res);
     } catch (e) {
-      print('Error: $e');
-      return null;
+      print('Error creating marker: $e');
+      rethrow; // Rethrow so the service/bloc can catch it
     }
   }
 
@@ -56,8 +57,8 @@ class InfrastructureMarker implements RepositoryPolygon {
       final res = await db.from('marker').select().eq('uid', uid).single();
       return EntitiesMarker.fromJSON(res);
     } catch (e) {
-      print('Error: $e');
-      return null;
+      print('Error reading marker: $e');
+      rethrow;
     }
   }
 
@@ -68,8 +69,8 @@ class InfrastructureMarker implements RepositoryPolygon {
           await db.from('marker').select().contains('uidUser', [uidUser]);
       return res.map((e) => EntitiesMarker.fromJSON(e)).toList();
     } catch (e) {
-      print('Error: $e');
-      return [null];
+      print('Error reading marker list: $e');
+      return []; // Return empty list instead of [null] for safer handling
     }
   }
 
@@ -77,21 +78,30 @@ class InfrastructureMarker implements RepositoryPolygon {
   Future<EntitiesMarker?> updateMarker(EntitiesMarker marker, {bool keepExistingImage = false}) async {
     String publicURL = '';
     final oldMarker = await readMarker(marker.uid);
-    String shortImageURL = _extractUniqueFilename(marker.urlImage);
 
     try {
-      if (keepExistingImage) {
+      // Check if we should keep existing image:
+      // 1. keepExistingImage flag is true, OR
+      // 2. urlImage starts with 'NULL:' (convention from modal when no new image selected)
+      final shouldKeepExistingImage = keepExistingImage || marker.urlImage.startsWith('NULL:');
+
+      if (shouldKeepExistingImage) {
         // Keep the existing image URL from the old marker
         publicURL = oldMarker?.urlImage ?? '';
-      } else if (marker.urlImage.isNotEmpty && shortImageURL.isNotEmpty) {
+      } else if (marker.urlImage.isNotEmpty) {
         // Upload new image and delete old one
-        final imageRes =
-            await updateImageMarker(marker.urlImage, shortImageURL, oldMarker?.urlImage ?? '');
-        if (!imageRes) {
-          print('Error: Image not updated');
+        String shortImageURL = _extractUniqueFilename(marker.urlImage);
+        if (shortImageURL.isNotEmpty) {
+          final imageRes =
+              await updateImageMarker(marker.urlImage, shortImageURL, oldMarker?.urlImage ?? '');
+          if (!imageRes) {
+            print('Warning: Image not updated, keeping old image');
+            publicURL = oldMarker?.urlImage ?? '';
+          } else {
+            publicURL =
+                db.storage.from('bamboo_images').getPublicUrl(shortImageURL);
+          }
         }
-        publicURL =
-            db.storage.from('bamboo_images').getPublicUrl(shortImageURL);
       }
 
       final res = await db
@@ -106,8 +116,8 @@ class InfrastructureMarker implements RepositoryPolygon {
           .single();
       return EntitiesMarker.fromJSON(res);
     } catch (e) {
-      print('Error: $e');
-      return null;
+      print('Error updating marker: $e');
+      rethrow; // Rethrow so the service/bloc can catch it
     }
   }
 
@@ -119,7 +129,8 @@ class InfrastructureMarker implements RepositoryPolygon {
       }
       await db.from('marker').delete().eq('uid', marker.uid);
     } catch (e) {
-      print('Error: $e');
+      print('Error deleting marker: $e');
+      rethrow; // Rethrow so the service/bloc can catch it
     }
   }
 
@@ -185,7 +196,7 @@ class InfrastructureMarker implements RepositoryPolygon {
     try {
       await db.storage.from('bamboo_images').remove([relativePath]);
     } catch (e) {
-      print('Error: $e');
+      print('Error deleting image: $e');
     }
   }
 
