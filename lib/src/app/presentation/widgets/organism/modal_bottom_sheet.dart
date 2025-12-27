@@ -5,6 +5,7 @@ import 'package:bamboo_app/src/app/presentation/widgets/atom/auth_text_field.dar
 import 'package:bamboo_app/src/app/presentation/widgets/atom/delete_button.dart';
 import 'package:bamboo_app/src/app/presentation/widgets/atom/header_auth.dart';
 import 'package:bamboo_app/src/app/presentation/widgets/atom/image_uploader.dart';
+import 'package:bamboo_app/src/app/presentation/widgets/atom/modal_snackbar.dart';
 import 'package:bamboo_app/src/app/presentation/widgets/atom/submit_button.dart';
 import 'package:bamboo_app/src/app/routes/routes.dart';
 import 'package:bamboo_app/src/app/use_cases/gps_controller.dart';
@@ -42,6 +43,9 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
   File? _image;
   void _onImageChanged(File? image) => _image = image;
 
+  bool _isSubmitting = false;
+  MarkerStatus? _previousStatus;
+
   @override
   void initState() {
     super.initState();
@@ -60,23 +64,96 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
     }
   }
 
+  String _getLoadingMessage(MarkerState state) {
+    if (state.isAdding) return 'Menambahkan data...';
+    if (state.isUpdating) return 'Mengupdate data...';
+    if (state.isDeleting) return 'Menghapus data...';
+    return 'Memproses...';
+  }
+
+  void _handleStateChange(BuildContext context, MarkerState state) {
+    if (_isSubmitting) {
+      if (state.status == MarkerStatus.loaded) {
+        _isSubmitting = false;
+        String message = 'Berhasil!';
+        if (_previousStatus == MarkerStatus.adding) {
+          message = 'Data berhasil ditambahkan';
+        } else if (_previousStatus == MarkerStatus.updating) {
+          message = 'Data berhasil diupdate';
+        } else if (_previousStatus == MarkerStatus.deleting) {
+          message = 'Data berhasil dihapus';
+        }
+        ModalSnackbar(widget.parentContext).show(message);
+        if (widget.uidMarker == null) {
+          router.pop();
+        } else {
+          router.pop();
+          router.pop();
+        }
+      } else if (state.hasError) {
+        _isSubmitting = false;
+        ModalSnackbar(widget.parentContext).show(state.errorMessage ?? 'Terjadi kesalahan');
+      }
+    }
+    _previousStatus = state.status;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<EntitiesMarker>(
-      future: _markerFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        } else if (snapshot.hasData) {
-          EntitiesMarker marker = snapshot.data!;
-          return _buildContent(context, marker);
-        }
-        return _buildContent(context, null);
+    return BlocConsumer<MarkerStateBloc, MarkerState>(
+      listener: _handleStateChange,
+      builder: (context, state) {
+        final isProcessing = state.isProcessing && _isSubmitting;
+
+        return Stack(
+          children: [
+            FutureBuilder<EntitiesMarker>(
+              future: _markerFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (snapshot.hasData) {
+                  EntitiesMarker marker = snapshot.data!;
+                  return _buildContent(context, marker, isProcessing);
+                }
+                return _buildContent(context, null, isProcessing);
+              },
+            ),
+            if (isProcessing)
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.5),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
+                    ),
+                  ),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const CircularProgressIndicator(color: Colors.white),
+                        const SizedBox(height: 16),
+                        Text(
+                          _getLoadingMessage(state),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
       },
     );
   }
 
-  Widget _buildContent(BuildContext context, EntitiesMarker? marker) {
+  Widget _buildContent(BuildContext context, EntitiesMarker? marker, bool isProcessing) {
     return SingleChildScrollView(
       child: Container(
         width: double.infinity,
@@ -95,13 +172,13 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
               subheading: 'Tambahkan data lokasi baru',
             ),
             SizedBox(height: 0.03.sh),
-            _buildTextFields(),
+            _buildTextFields(isProcessing),
             SizedBox(height: 0.03.sh),
             Text(
               'Simpan lokasi ini?',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
-            _buildSubmitButton(marker),
+            _buildSubmitButton(marker, isProcessing),
             Padding(
               padding: EdgeInsets.only(
                 bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -113,191 +190,198 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
     );
   }
 
-  Widget _buildTextFields() {
-    return Column(
-      children: [
-        AuthTextField(
-          controller: _nameController,
-          hintText: 'Nama',
-          label: 'Nama',
-          validator: TextfieldValidator.name,
-        ),
-        SizedBox(height: 0.015.sh),
-        Row(
+  Widget _buildTextFields(bool isProcessing) {
+    return IgnorePointer(
+      ignoring: isProcessing,
+      child: Opacity(
+        opacity: isProcessing ? 0.5 : 1.0,
+        child: Column(
           children: [
-            Flexible(
-              flex: 2,
-              fit: FlexFit.tight,
-              child: AuthTextField(
-                controller: _strainController,
-                hintText: 'Jenis Bambu',
-                label: 'Jenis Bambu',
-                optional: true,
-              ),
+            AuthTextField(
+              controller: _nameController,
+              hintText: 'Nama',
+              label: 'Nama',
+              validator: TextfieldValidator.name,
             ),
-            Padding(padding: EdgeInsets.only(left: 0.02.sw)),
-            Flexible(
-              flex: 1,
-              child: AuthTextField(
-                controller: _qtyController,
-                hintText: 'Jumlah',
-                label: 'Jumlah',
-                validator: TextfieldValidator.name,
-                type: TextInputType.number,
-              ),
+            SizedBox(height: 0.015.sh),
+            Row(
+              children: [
+                Flexible(
+                  flex: 2,
+                  fit: FlexFit.tight,
+                  child: AuthTextField(
+                    controller: _strainController,
+                    hintText: 'Jenis Bambu',
+                    label: 'Jenis Bambu',
+                    optional: true,
+                  ),
+                ),
+                Padding(padding: EdgeInsets.only(left: 0.02.sw)),
+                Flexible(
+                  flex: 1,
+                  child: AuthTextField(
+                    controller: _qtyController,
+                    hintText: 'Jumlah',
+                    label: 'Jumlah',
+                    validator: TextfieldValidator.name,
+                    type: TextInputType.number,
+                  ),
+                ),
+              ],
             ),
+            SizedBox(height: 0.015.sh),
+            AuthTextField(
+              controller: _descriptionController,
+              hintText: 'Deskripsi',
+              label: 'Deskripsi',
+              optional: true,
+            ),
+            SizedBox(height: 0.015.sh),
+            AuthTextField(
+              controller: _ownerNameController,
+              hintText: 'Nama Pemilik',
+              label: 'Nama Pemilik',
+              optional: true,
+            ),
+            SizedBox(height: 0.015.sh),
+            AuthTextField(
+              controller: _ownerContactController,
+              hintText: 'Nomor Pemilik',
+              label: 'Nomor Pemilik',
+              optional: true,
+              type: TextInputType.phone,
+            ),
+            SizedBox(height: 0.015.sh),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Flexible(
+                  flex: 1,
+                  child: AuthTextField(
+                    controller: _latitudeController,
+                    hintText: 'Latitude',
+                    label: 'Latitude',
+                    optional: true,
+                    type: TextInputType.phone,
+                  ),
+                ),
+                Padding(padding: EdgeInsets.only(left: 0.02.sw)),
+                Flexible(
+                  flex: 1,
+                  child: AuthTextField(
+                    controller: _longitudeController,
+                    hintText: 'Longitude',
+                    label: 'Longitude',
+                    optional: true,
+                    type: TextInputType.phone,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 0.015.sh),
+            ImageUploader(onImageSelected: _onImageChanged),
           ],
         ),
-        SizedBox(height: 0.015.sh),
-        AuthTextField(
-          controller: _descriptionController,
-          hintText: 'Deskripsi',
-          label: 'Deskripsi',
-          optional: true,
-        ),
-        SizedBox(height: 0.015.sh),
-        AuthTextField(
-          controller: _ownerNameController,
-          hintText: 'Nama Pemilik',
-          label: 'Nama Pemilik',
-          optional: true,
-        ),
-        SizedBox(height: 0.015.sh),
-        AuthTextField(
-          controller: _ownerContactController,
-          hintText: 'Nomor Pemilik',
-          label: 'Nomor Pemilik',
-          optional: true,
-          type: TextInputType.phone,
-        ),
-        SizedBox(height: 0.015.sh),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Flexible(
-              flex: 1,
-              child: AuthTextField(
-                controller: _latitudeController,
-                hintText: 'Latitude',
-                label: 'Latitude',
-                optional: true,
-                type: TextInputType.phone,
-              ),
-            ),
-            Padding(padding: EdgeInsets.only(left: 0.02.sw)),
-            Flexible(
-              flex: 1,
-              child: AuthTextField(
-                controller: _longitudeController,
-                hintText: 'Longitude',
-                label: 'Longitude',
-                optional: true,
-                type: TextInputType.phone,
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: 0.015.sh),
-        ImageUploader(onImageSelected: _onImageChanged),
-      ],
+      ),
     );
   }
 
-  Widget _buildSubmitButton(EntitiesMarker? marker) {
+  Widget _buildSubmitButton(EntitiesMarker? marker, bool isProcessing) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         const Spacer(flex: 2),
         SubmitButton(
-          onTap: () async {
-            final position = await GpsController().getCurrentPosition();
-            LatLng currentPosition = LatLng(
-              position.latitude,
-              position.longitude,
-            );
+          onTap: isProcessing
+              ? null
+              : () async {
+                  setState(() => _isSubmitting = true);
 
-            if (widget.uidMarker == null) {
-              BlocProvider.of<MarkerStateBloc>(widget.parentContext).add(
-                AddMarkerData(
-                  marker: EntitiesMarker(
-                    uid: '',
-                    uidCreator: defaultUser.uid,
-                    uidUser: [defaultUser.uid],
-                    name: _nameController.text,
-                    description: _descriptionController.text,
-                    strain: _strainController.text,
-                    qty: int.tryParse(_qtyController.text) ?? 0,
-                    urlImage: _image == null ? '' : _image!.path,
-                    ownerName: _ownerNameController.text,
-                    ownerContact: _ownerContactController.text,
-                    location: _latitudeController.text.isEmpty ||
-                            _longitudeController.text.isEmpty
-                        ? currentPosition
-                        : LatLng(
-                            double.parse(_latitudeController.text),
-                            double.parse(_longitudeController.text),
-                          ),
-                    createdAt: DateTime.now(),
-                  ),
-                ),
-              );
-            } else {
-              BlocProvider.of<MarkerStateBloc>(widget.parentContext).add(
-                UpdateMarkerData(
-                  marker: EntitiesMarker(
-                    uid: marker!.uid,
-                    uidCreator: marker.uidCreator,
-                    uidUser: marker.uidUser,
-                    name: _nameController.text.isEmpty
-                        ? marker.name
-                        : _nameController.text,
-                    description: _descriptionController.text.isEmpty
-                        ? marker.description
-                        : _descriptionController.text,
-                    strain: _strainController.text.isEmpty
-                        ? marker.strain
-                        : _strainController.text,
-                    qty: _qtyController.text.isEmpty
-                        ? marker.qty
-                        : int.parse(_qtyController.text),
-                    urlImage: _image == null
-                        ? 'NULL:${marker.urlImage}'
-                        : _image!.path,
-                    ownerName: _ownerNameController.text.isEmpty
-                        ? marker.ownerName
-                        : _ownerNameController.text,
-                    ownerContact: _ownerContactController.text.isEmpty
-                        ? marker.ownerContact
-                        : _ownerContactController.text,
-                    location: _latitudeController.text.isEmpty ||
-                            _longitudeController.text.isEmpty
-                        ? currentPosition
-                        : LatLng(
-                            double.parse(_latitudeController.text),
-                            double.parse(_longitudeController.text),
-                          ),
-                    createdAt: DateTime.now(),
-                  ),
-                ),
-              );
-            }
-            if (widget.uidMarker == null) {
-              router.pop();
-            } else {
-              router.pop();
-              router.pop();
-            }
-          },
-          text: 'Tambahkan',
+                  final position = await GpsController().getCurrentPosition();
+                  LatLng currentPosition = LatLng(
+                    position.latitude,
+                    position.longitude,
+                  );
+
+                  if (widget.uidMarker == null) {
+                    BlocProvider.of<MarkerStateBloc>(widget.parentContext).add(
+                      AddMarkerData(
+                        marker: EntitiesMarker(
+                          uid: '',
+                          uidCreator: defaultUser.uid,
+                          uidUser: [defaultUser.uid],
+                          name: _nameController.text,
+                          description: _descriptionController.text,
+                          strain: _strainController.text,
+                          qty: int.tryParse(_qtyController.text) ?? 0,
+                          urlImage: _image == null ? '' : _image!.path,
+                          ownerName: _ownerNameController.text,
+                          ownerContact: _ownerContactController.text,
+                          location: _latitudeController.text.isEmpty ||
+                                  _longitudeController.text.isEmpty
+                              ? currentPosition
+                              : LatLng(
+                                  double.parse(_latitudeController.text),
+                                  double.parse(_longitudeController.text),
+                                ),
+                          createdAt: DateTime.now(),
+                        ),
+                      ),
+                    );
+                  } else {
+                    BlocProvider.of<MarkerStateBloc>(widget.parentContext).add(
+                      UpdateMarkerData(
+                        marker: EntitiesMarker(
+                          uid: marker!.uid,
+                          uidCreator: marker.uidCreator,
+                          uidUser: marker.uidUser,
+                          name: _nameController.text.isEmpty
+                              ? marker.name
+                              : _nameController.text,
+                          description: _descriptionController.text.isEmpty
+                              ? marker.description
+                              : _descriptionController.text,
+                          strain: _strainController.text.isEmpty
+                              ? marker.strain
+                              : _strainController.text,
+                          qty: _qtyController.text.isEmpty
+                              ? marker.qty
+                              : int.parse(_qtyController.text),
+                          urlImage: _image == null
+                              ? 'NULL:${marker.urlImage}'
+                              : _image!.path,
+                          ownerName: _ownerNameController.text.isEmpty
+                              ? marker.ownerName
+                              : _ownerNameController.text,
+                          ownerContact: _ownerContactController.text.isEmpty
+                              ? marker.ownerContact
+                              : _ownerContactController.text,
+                          location: _latitudeController.text.isEmpty ||
+                                  _longitudeController.text.isEmpty
+                              ? currentPosition
+                              : LatLng(
+                                  double.parse(_latitudeController.text),
+                                  double.parse(_longitudeController.text),
+                                ),
+                          createdAt: DateTime.now(),
+                        ),
+                      ),
+                    );
+                  }
+                },
+          text: isProcessing ? 'Memproses...' : 'Tambahkan',
         ),
         const Spacer(),
         widget.uidMarker != null
-            ? DeleteButton(onTap: () {
-                BlocProvider.of<MarkerStateBloc>(widget.parentContext)
-                    .add(DeleteMarkerData(marker: marker!));
-                router.pop();
-                router.pop();
-              })
+            ? DeleteButton(
+                onTap: isProcessing
+                    ? null
+                    : () {
+                        setState(() => _isSubmitting = true);
+                        BlocProvider.of<MarkerStateBloc>(widget.parentContext)
+                            .add(DeleteMarkerData(marker: marker!));
+                      },
+              )
             : const Spacer(),
       ],
     );
