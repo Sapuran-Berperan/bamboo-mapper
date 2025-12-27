@@ -31,6 +31,7 @@ class ModalBottomSheet extends StatefulWidget {
 
 class _ModalBottomSheetState extends State<ModalBottomSheet> {
   Future<EntitiesMarker>? _markerFuture;
+  final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _qtyController = TextEditingController();
@@ -44,39 +45,56 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
   void _onImageChanged(File? image) => _image = image;
 
   bool _isSubmitting = false;
-  bool _waitingForResponse = false;  // Track if we're waiting for BLoC response
-  String? _pendingOperation;  // Track which operation we're waiting for
+  bool _waitingForResponse = false;
+  String? _pendingOperation;
+
+  bool get _isEditMode => widget.uidMarker != null;
 
   @override
   void initState() {
     super.initState();
-    if (widget.uidMarker != null) {
+    if (_isEditMode) {
       _markerFuture = ServiceMarker().fetchMarker(widget.uidMarker!);
       _markerFuture!.then((marker) {
-        _nameController.text = marker.name;
-        _descriptionController.text = marker.description;
-        _qtyController.text = marker.qty.toString();
-        _strainController.text = marker.strain;
-        _ownerNameController.text = marker.ownerName;
-        _ownerContactController.text = marker.ownerContact;
-        _latitudeController.text = marker.location.latitude.toString();
-        _longitudeController.text = marker.location.longitude.toString();
+        if (mounted) {
+          setState(() {
+            _nameController.text = marker.name;
+            _descriptionController.text = marker.description;
+            _qtyController.text = marker.qty.toString();
+            _strainController.text = marker.strain;
+            _ownerNameController.text = marker.ownerName;
+            _ownerContactController.text = marker.ownerContact;
+            _latitudeController.text = marker.location.latitude.toString();
+            _longitudeController.text = marker.location.longitude.toString();
+          });
+        }
       });
     }
   }
 
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _descriptionController.dispose();
+    _qtyController.dispose();
+    _strainController.dispose();
+    _ownerNameController.dispose();
+    _ownerContactController.dispose();
+    _latitudeController.dispose();
+    _longitudeController.dispose();
+    super.dispose();
+  }
+
   String _getLoadingMessage() {
-    if (_pendingOperation == 'add') return 'Menambahkan data...';
-    if (_pendingOperation == 'update') return 'Mengupdate data...';
+    if (_pendingOperation == 'add') return 'Menyimpan data baru...';
+    if (_pendingOperation == 'update') return 'Menyimpan perubahan...';
     if (_pendingOperation == 'delete') return 'Menghapus data...';
     return 'Memproses...';
   }
 
   void _handleStateChange(BuildContext context, MarkerState state) {
-    // Only handle state changes if we're actually waiting for a response
     if (!_waitingForResponse) return;
 
-    // Check if operation completed (state changed from processing to loaded/error)
     if (state.status == MarkerStatus.loaded) {
       _isSubmitting = false;
       _waitingForResponse = false;
@@ -85,89 +103,245 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
       if (_pendingOperation == 'add') {
         message = 'Data berhasil ditambahkan';
       } else if (_pendingOperation == 'update') {
-        message = 'Data berhasil diupdate';
+        message = 'Data berhasil diperbarui';
       } else if (_pendingOperation == 'delete') {
         message = 'Data berhasil dihapus';
       }
 
       _pendingOperation = null;
-      ModalSnackbar(widget.parentContext).show(message);
+      ModalSnackbar(widget.parentContext).showSuccess(message);
 
-      if (widget.uidMarker == null) {
+      if (!_isEditMode) {
         router.pop();
       } else {
         router.pop();
         router.pop();
       }
     } else if (state.hasError) {
-      _isSubmitting = false;
-      _waitingForResponse = false;
-      _pendingOperation = null;
-      ModalSnackbar(widget.parentContext).show(state.errorMessage ?? 'Terjadi kesalahan');
+      setState(() {
+        _isSubmitting = false;
+        _waitingForResponse = false;
+        _pendingOperation = null;
+      });
+      ModalSnackbar(widget.parentContext).showError(state.errorMessage ?? 'Terjadi kesalahan');
     }
+  }
+
+  // Validate required fields
+  bool _validateForm() {
+    if (_nameController.text.trim().isEmpty) {
+      ModalSnackbar(context).showError('Nama lokasi harus diisi');
+      return false;
+    }
+    if (_qtyController.text.trim().isEmpty) {
+      ModalSnackbar(context).showError('Jumlah harus diisi');
+      return false;
+    }
+    final qty = int.tryParse(_qtyController.text);
+    if (qty == null || qty < 0) {
+      ModalSnackbar(context).showError('Jumlah harus berupa angka valid');
+      return false;
+    }
+    return true;
+  }
+
+  // Show delete confirmation dialog
+  Future<bool> _showDeleteConfirmation(BuildContext context) async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Hapus Data'),
+          content: const Text(
+            'Apakah Anda yakin ingin menghapus data ini? Tindakan ini tidak dapat dibatalkan.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Batal'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Hapus'),
+            ),
+          ],
+        );
+      },
+    ) ?? false;
+  }
+
+  Future<void> _handleSubmit(EntitiesMarker? marker) async {
+    if (!_validateForm()) return;
+    if (_isSubmitting) return; // Prevent double-tap
+
+    setState(() {
+      _isSubmitting = true;
+      _pendingOperation = _isEditMode ? 'update' : 'add';
+    });
+
+    try {
+      final position = await GpsController().getCurrentPosition();
+      LatLng currentPosition = LatLng(position.latitude, position.longitude);
+
+      setState(() => _waitingForResponse = true);
+
+      if (!_isEditMode) {
+        BlocProvider.of<MarkerStateBloc>(widget.parentContext).add(
+          AddMarkerData(
+            marker: EntitiesMarker(
+              uid: '',
+              uidCreator: defaultUser.uid,
+              uidUser: [defaultUser.uid],
+              name: _nameController.text.trim(),
+              description: _descriptionController.text.trim(),
+              strain: _strainController.text.trim(),
+              qty: int.tryParse(_qtyController.text) ?? 0,
+              urlImage: _image?.path ?? '',
+              ownerName: _ownerNameController.text.trim(),
+              ownerContact: _ownerContactController.text.trim(),
+              location: _getLocation(currentPosition),
+              createdAt: DateTime.now(),
+            ),
+          ),
+        );
+      } else {
+        BlocProvider.of<MarkerStateBloc>(widget.parentContext).add(
+          UpdateMarkerData(
+            marker: EntitiesMarker(
+              uid: marker!.uid,
+              uidCreator: marker.uidCreator,
+              uidUser: marker.uidUser,
+              name: _nameController.text.trim(),
+              description: _descriptionController.text.trim(),
+              strain: _strainController.text.trim(),
+              qty: int.tryParse(_qtyController.text) ?? marker.qty,
+              urlImage: _image == null ? 'NULL:${marker.urlImage}' : _image!.path,
+              ownerName: _ownerNameController.text.trim(),
+              ownerContact: _ownerContactController.text.trim(),
+              location: _getLocation(currentPosition),
+              createdAt: marker.createdAt,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _isSubmitting = false;
+        _waitingForResponse = false;
+        _pendingOperation = null;
+      });
+      ModalSnackbar(context).showError('Gagal mendapatkan lokasi GPS');
+    }
+  }
+
+  LatLng _getLocation(LatLng fallback) {
+    if (_latitudeController.text.isNotEmpty && _longitudeController.text.isNotEmpty) {
+      final lat = double.tryParse(_latitudeController.text);
+      final lng = double.tryParse(_longitudeController.text);
+      if (lat != null && lng != null) {
+        return LatLng(lat, lng);
+      }
+    }
+    return fallback;
+  }
+
+  Future<void> _handleDelete(EntitiesMarker marker) async {
+    if (_isSubmitting) return; // Prevent double-tap
+
+    final confirmed = await _showDeleteConfirmation(context);
+    if (!confirmed) return;
+
+    setState(() {
+      _isSubmitting = true;
+      _pendingOperation = 'delete';
+      _waitingForResponse = true;
+    });
+
+    BlocProvider.of<MarkerStateBloc>(widget.parentContext)
+        .add(DeleteMarkerData(marker: marker));
   }
 
   @override
   Widget build(BuildContext context) {
-    // Use BlocProvider.value to provide the BLoC from parent context
-    // since modal bottom sheet has its own widget tree
     return BlocProvider.value(
       value: BlocProvider.of<MarkerStateBloc>(widget.parentContext),
       child: BlocConsumer<MarkerStateBloc, MarkerState>(
         listener: _handleStateChange,
         builder: (context, state) {
-        final isProcessing = _isSubmitting;
-
-        return Stack(
-          children: [
-            FutureBuilder<EntitiesMarker>(
-              future: _markerFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                } else if (snapshot.hasData) {
-                  EntitiesMarker marker = snapshot.data!;
-                  return _buildContent(context, marker, isProcessing);
-                }
-                return _buildContent(context, null, isProcessing);
-              },
-            ),
-            if (isProcessing)
-              Positioned.fill(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.5),
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(20),
-                      topRight: Radius.circular(20),
+          return Stack(
+            children: [
+              FutureBuilder<EntitiesMarker>(
+                future: _markerFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return SizedBox(
+                      height: 0.5.sh,
+                      child: const Center(child: CircularProgressIndicator()),
+                    );
+                  } else if (snapshot.hasError) {
+                    return SizedBox(
+                      height: 0.3.sh,
+                      child: Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                            const SizedBox(height: 16),
+                            const Text('Gagal memuat data'),
+                            const SizedBox(height: 8),
+                            ElevatedButton(
+                              onPressed: () => router.pop(),
+                              child: const Text('Tutup'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  } else if (snapshot.hasData) {
+                    return _buildContent(context, snapshot.data!);
+                  }
+                  return _buildContent(context, null);
+                },
+              ),
+              if (_isSubmitting)
+                Positioned.fill(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.6),
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
                     ),
-                  ),
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const CircularProgressIndicator(color: Colors.white),
-                        const SizedBox(height: 16),
-                        Text(
-                          _getLoadingMessage(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
+                    child: Center(
+                      child: Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const CircularProgressIndicator(),
+                              const SizedBox(height: 16),
+                              Text(
+                                _getLoadingMessage(),
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
+                            ],
                           ),
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-          ],
-        );
+            ],
+          );
         },
       ),
     );
   }
 
-  Widget _buildContent(BuildContext context, EntitiesMarker? marker, bool isProcessing) {
+  Widget _buildContent(BuildContext context, EntitiesMarker? marker) {
     return SingleChildScrollView(
       child: Container(
         width: double.infinity,
@@ -179,45 +353,57 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
           ),
         ),
         padding: EdgeInsets.symmetric(vertical: 20, horizontal: 0.1.sw),
-        child: Column(
-          children: [
-            const HeaderAuth(
-              heading: 'Tambahkan Data',
-              subheading: 'Tambahkan data lokasi baru',
-            ),
-            SizedBox(height: 0.03.sh),
-            _buildTextFields(isProcessing),
-            SizedBox(height: 0.03.sh),
-            Text(
-              'Simpan lokasi ini?',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            _buildSubmitButton(marker, isProcessing),
-            Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              // Drag handle
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[400],
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-            ),
-          ],
+              HeaderAuth(
+                heading: _isEditMode ? 'Edit Data' : 'Tambah Data',
+                subheading: _isEditMode
+                    ? 'Perbarui informasi lokasi'
+                    : 'Tambahkan data lokasi baru',
+              ),
+              SizedBox(height: 0.02.sh),
+              _buildTextFields(),
+              SizedBox(height: 0.02.sh),
+              _buildActionButtons(marker),
+              Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildTextFields(bool isProcessing) {
+  Widget _buildTextFields() {
     return IgnorePointer(
-      ignoring: isProcessing,
-      child: Opacity(
-        opacity: isProcessing ? 0.5 : 1.0,
+      ignoring: _isSubmitting,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 200),
+        opacity: _isSubmitting ? 0.5 : 1.0,
         child: Column(
           children: [
             AuthTextField(
               controller: _nameController,
-              hintText: 'Nama',
-              label: 'Nama',
+              hintText: 'Nama Lokasi *',
+              label: 'Nama Lokasi',
               validator: TextfieldValidator.name,
             ),
-            SizedBox(height: 0.015.sh),
+            SizedBox(height: 0.012.sh),
             Row(
               children: [
                 Flexible(
@@ -235,7 +421,7 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
                   flex: 1,
                   child: AuthTextField(
                     controller: _qtyController,
-                    hintText: 'Jumlah',
+                    hintText: 'Jumlah *',
                     label: 'Jumlah',
                     validator: TextfieldValidator.name,
                     type: TextInputType.number,
@@ -243,21 +429,21 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
                 ),
               ],
             ),
-            SizedBox(height: 0.015.sh),
+            SizedBox(height: 0.012.sh),
             AuthTextField(
               controller: _descriptionController,
               hintText: 'Deskripsi',
               label: 'Deskripsi',
               optional: true,
             ),
-            SizedBox(height: 0.015.sh),
+            SizedBox(height: 0.012.sh),
             AuthTextField(
               controller: _ownerNameController,
               hintText: 'Nama Pemilik',
               label: 'Nama Pemilik',
               optional: true,
             ),
-            SizedBox(height: 0.015.sh),
+            SizedBox(height: 0.012.sh),
             AuthTextField(
               controller: _ownerContactController,
               hintText: 'Nomor Pemilik',
@@ -265,7 +451,7 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
               optional: true,
               type: TextInputType.phone,
             ),
-            SizedBox(height: 0.015.sh),
+            SizedBox(height: 0.012.sh),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -276,7 +462,7 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
                     hintText: 'Latitude',
                     label: 'Latitude',
                     optional: true,
-                    type: TextInputType.phone,
+                    type: const TextInputType.numberWithOptions(decimal: true, signed: true),
                   ),
                 ),
                 Padding(padding: EdgeInsets.only(left: 0.02.sw)),
@@ -287,12 +473,12 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
                     hintText: 'Longitude',
                     label: 'Longitude',
                     optional: true,
-                    type: TextInputType.phone,
+                    type: const TextInputType.numberWithOptions(decimal: true, signed: true),
                   ),
                 ),
               ],
             ),
-            SizedBox(height: 0.015.sh),
+            SizedBox(height: 0.012.sh),
             ImageUploader(onImageSelected: _onImageChanged),
           ],
         ),
@@ -300,114 +486,39 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
     );
   }
 
-  Widget _buildSubmitButton(EntitiesMarker? marker, bool isProcessing) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const Spacer(flex: 2),
-        SubmitButton(
-          onTap: isProcessing
-              ? null
-              : () async {
-                  setState(() {
-                    _isSubmitting = true;
-                    _pendingOperation = widget.uidMarker == null ? 'add' : 'update';
-                  });
-
-                  final position = await GpsController().getCurrentPosition();
-                  LatLng currentPosition = LatLng(
-                    position.latitude,
-                    position.longitude,
-                  );
-
-                  // Set waiting flag right before dispatching event
-                  setState(() => _waitingForResponse = true);
-
-                  if (widget.uidMarker == null) {
-                    BlocProvider.of<MarkerStateBloc>(widget.parentContext).add(
-                      AddMarkerData(
-                        marker: EntitiesMarker(
-                          uid: '',
-                          uidCreator: defaultUser.uid,
-                          uidUser: [defaultUser.uid],
-                          name: _nameController.text,
-                          description: _descriptionController.text,
-                          strain: _strainController.text,
-                          qty: int.tryParse(_qtyController.text) ?? 0,
-                          urlImage: _image == null ? '' : _image!.path,
-                          ownerName: _ownerNameController.text,
-                          ownerContact: _ownerContactController.text,
-                          location: _latitudeController.text.isEmpty ||
-                                  _longitudeController.text.isEmpty
-                              ? currentPosition
-                              : LatLng(
-                                  double.parse(_latitudeController.text),
-                                  double.parse(_longitudeController.text),
-                                ),
-                          createdAt: DateTime.now(),
-                        ),
-                      ),
-                    );
-                  } else {
-                    BlocProvider.of<MarkerStateBloc>(widget.parentContext).add(
-                      UpdateMarkerData(
-                        marker: EntitiesMarker(
-                          uid: marker!.uid,
-                          uidCreator: marker.uidCreator,
-                          uidUser: marker.uidUser,
-                          name: _nameController.text.isEmpty
-                              ? marker.name
-                              : _nameController.text,
-                          description: _descriptionController.text.isEmpty
-                              ? marker.description
-                              : _descriptionController.text,
-                          strain: _strainController.text.isEmpty
-                              ? marker.strain
-                              : _strainController.text,
-                          qty: _qtyController.text.isEmpty
-                              ? marker.qty
-                              : int.parse(_qtyController.text),
-                          urlImage: _image == null
-                              ? 'NULL:${marker.urlImage}'
-                              : _image!.path,
-                          ownerName: _ownerNameController.text.isEmpty
-                              ? marker.ownerName
-                              : _ownerNameController.text,
-                          ownerContact: _ownerContactController.text.isEmpty
-                              ? marker.ownerContact
-                              : _ownerContactController.text,
-                          location: _latitudeController.text.isEmpty ||
-                                  _longitudeController.text.isEmpty
-                              ? currentPosition
-                              : LatLng(
-                                  double.parse(_latitudeController.text),
-                                  double.parse(_longitudeController.text),
-                                ),
-                          createdAt: DateTime.now(),
-                        ),
-                      ),
-                    );
-                  }
-                },
-          text: isProcessing ? 'Memproses...' : 'Tambahkan',
-        ),
-        const Spacer(),
-        widget.uidMarker != null
-            ? DeleteButton(
-                onTap: isProcessing
-                    ? null
-                    : () {
-                        setState(() {
-                          _isSubmitting = true;
-                          _pendingOperation = 'delete';
-                          _waitingForResponse = true;
-                        });
-                        BlocProvider.of<MarkerStateBloc>(widget.parentContext)
-                            .add(DeleteMarkerData(marker: marker!));
-                      },
-              )
-            : const Spacer(),
-      ],
+  Widget _buildActionButtons(EntitiesMarker? marker) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          // Cancel button
+          Expanded(
+            child: OutlinedButton(
+              onPressed: _isSubmitting ? null : () => router.pop(),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+              child: const Text('Batal'),
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Submit button
+          Expanded(
+            flex: 2,
+            child: SubmitButton(
+              onTap: _isSubmitting ? null : () => _handleSubmit(marker),
+              text: _isEditMode ? 'Simpan Perubahan' : 'Simpan Data',
+            ),
+          ),
+          // Delete button (only in edit mode)
+          if (_isEditMode) ...[
+            const SizedBox(width: 12),
+            DeleteButton(
+              onTap: _isSubmitting ? null : () => _handleDelete(marker!),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

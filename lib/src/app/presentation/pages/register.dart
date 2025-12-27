@@ -45,8 +45,8 @@ class _RegisterPageState extends State<RegisterPage> {
       );
       if (mounted) {
         res
-            ? ModalSnackbar(context).show('Daftar Berhasil')
-            : ModalSnackbar(context).show('Daftar Gagal');
+            ? ModalSnackbar(context).showSuccess('Pendaftaran Berhasil! Silakan login.')
+            : ModalSnackbar(context).showError('Pendaftaran gagal. Coba lagi.');
       }
     } finally {
       if (mounted) {

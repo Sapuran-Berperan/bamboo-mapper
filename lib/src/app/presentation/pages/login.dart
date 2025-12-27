@@ -34,8 +34,8 @@ class _LoginPageState extends State<LoginPage> {
       final res = await const AuthController().signIn(email, password);
       if (mounted) {
         res
-            ? ModalSnackbar(context).show('Login Berhasil')
-            : ModalSnackbar(context).show('Login Gagal');
+            ? ModalSnackbar(context).showSuccess('Login Berhasil')
+            : ModalSnackbar(context).showError('Email atau password salah');
       }
     } finally {
       if (mounted) {

@@ -60,7 +60,7 @@ class _DashboardPageState extends State<DashboardPage> {
         return BlocConsumer<MarkerStateBloc, MarkerState>(
           listener: (context, state) {
             if (state.hasError && state.errorMessage != null) {
-              ModalSnackbar(context).show(state.errorMessage!);
+              ModalSnackbar(context).showError(state.errorMessage!);
             }
           },
           builder: (builderContext, state) {
