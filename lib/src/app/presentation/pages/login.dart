@@ -19,6 +19,7 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final _controllerEmail = TextEditingController();
   final _controllerPassword = TextEditingController();
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -27,91 +28,129 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
+  Future<void> _handleLogin(String email, String password) async {
+    setState(() => _isLoading = true);
+    try {
+      final res = await const AuthController().signIn(email, password);
+      if (mounted) {
+        res
+            ? ModalSnackbar(context).show('Login Berhasil')
+            : ModalSnackbar(context).show('Login Gagal');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<UserLoggedStateBloc, UserLoggedState>(
       builder: (context, state) {
-        return Container(
-          padding: EdgeInsets.symmetric(horizontal: 0.05.sw, vertical: 0.05.sh),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Column(
-            children: [
-              const HeaderAuth(
-                heading: 'Masuk',
-                subheading: 'Masuk untuk Melanjutkan',
+        return Stack(
+          children: [
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 0.05.sw, vertical: 0.05.sh),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary,
+                borderRadius: BorderRadius.circular(10),
               ),
-              SizedBox(height: 0.03.sh),
-              AuthTextField(
-                controller: _controllerEmail,
-                validator: TextfieldValidator.validator(TextFieldType.email),
-                hintText: 'Email',
-                label: 'Email',
-              ),
-              SizedBox(height: 0.02.sh),
-              AuthTextField(
-                controller: _controllerPassword,
-                validator: TextfieldValidator.validator(TextFieldType.password),
-                hintText: 'Password',
-                label: 'Password',
-              ),
-              SizedBox(height: 0.02.sh),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Column(
                 children: [
-                  ElevatedButton(
-                    style: ButtonStyle(
-                      shape: WidgetStateProperty.all(
-                        RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(5),
+                  const HeaderAuth(
+                    heading: 'Masuk',
+                    subheading: 'Masuk untuk Melanjutkan',
+                  ),
+                  SizedBox(height: 0.03.sh),
+                  AuthTextField(
+                    controller: _controllerEmail,
+                    validator: TextfieldValidator.validator(TextFieldType.email),
+                    hintText: 'Email',
+                    label: 'Email',
+                  ),
+                  SizedBox(height: 0.02.sh),
+                  AuthTextField(
+                    controller: _controllerPassword,
+                    validator: TextfieldValidator.validator(TextFieldType.password),
+                    hintText: 'Password',
+                    label: 'Password',
+                  ),
+                  SizedBox(height: 0.02.sh),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      ElevatedButton(
+                        style: ButtonStyle(
+                          shape: WidgetStateProperty.all(
+                            RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                          ),
                         ),
+                        onPressed: _isLoading
+                            ? null
+                            : () => _handleLogin(
+                                  _controllerEmail.text,
+                                  _controllerPassword.text,
+                                ),
+                        child: _isLoading
+                            ? SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Theme.of(context).colorScheme.onPrimary,
+                                ),
+                              )
+                            : Text(
+                                'Login',
+                                style: Theme.of(context).textTheme.bodyLarge!,
+                              ),
                       ),
-                    ),
-                    onPressed: () async {
-                      final res = await const AuthController().signIn(
-                        _controllerEmail.text,
-                        _controllerPassword.text,
-                      );
-                      if (context.mounted) {
-                        res
-                            ? ModalSnackbar(context).show('Login Berhasil')
-                            : ModalSnackbar(context).show('Login Gagal');
-                      }
-                    },
-                    child: Text(
-                      'Login',
-                      style: Theme.of(context).textTheme.bodyLarge!,
-                    ),
+                      TextButton(
+                        onPressed: _isLoading ? null : () {},
+                        child: const Text('Lupa Password?'),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 0.025.sh),
+                  TextButton(
+                    onPressed: _isLoading ? null : () => router.go('/register'),
+                    child: const Text('Belum Punya Akun? Buat Akun'),
                   ),
                   TextButton(
-                    onPressed: () {},
-                    child: const Text('Lupa Password?'),
+                    onPressed: _isLoading
+                        ? null
+                        : () => _handleLogin('alan@gmail.com', 'alanalan'),
+                    child: const Text('Bypass Login'),
                   ),
                 ],
               ),
-              SizedBox(height: 0.025.sh),
-              TextButton(
-                onPressed: () => router.go('/register'),
-                child: const Text('Belum Punya Akun? Buat Akun'),
+            ),
+            if (_isLoading)
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text(
+                          'Sedang masuk...',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
-              TextButton(
-                onPressed: () async {
-                  final res = await const AuthController().signIn(
-                    'alan@gmail.com',
-                    'alanalan',
-                  );
-                  if (context.mounted) {
-                    res
-                        ? ModalSnackbar(context).show('Login Berhasil')
-                        : ModalSnackbar(context).show('Login Gagal');
-                  }
-                },
-                child: const Text('Bypass Login'),
-              ),
-            ],
-          ),
+          ],
         );
       },
     );
