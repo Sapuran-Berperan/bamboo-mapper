@@ -6,8 +6,8 @@ class ModalSnackbar {
 
   void show(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Email atau Password Salah'),
+      SnackBar(
+        content: Text(message),
       ),
     );
   }
