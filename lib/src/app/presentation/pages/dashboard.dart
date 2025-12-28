@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:math' as math;
+import 'dart:ui' as ui;
 import 'package:bamboo_app/src/app/blocs/map_type_state.dart';
 import 'package:bamboo_app/src/app/presentation/widgets/atom/modal_snackbar.dart';
 import 'package:bamboo_app/src/app/presentation/widgets/organism/floating_map_button.dart';
@@ -8,7 +10,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:bamboo_app/src/app/blocs/marker_state.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -21,8 +22,8 @@ class _DashboardPageState extends State<DashboardPage> {
   final MapController _mapController = MapController();
   final GpsController _gpsController = GpsController();
   List<Marker> _markers = [];
-  LatLng? _currentLocation;
-  StreamSubscription<LatLng>? _locationSubscription;
+  LocationData? _locationData;
+  StreamSubscription<LocationData>? _locationSubscription;
   bool _isMapReady = false;
 
   @override
@@ -33,14 +34,14 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<void> _initializeLocation() async {
-    // Get initial position
-    LatLng position = await _gpsController.getCurrentPosition();
-    setState(() => _currentLocation = position);
+    // Get initial position with heading
+    LocationData data = await _gpsController.getCurrentLocationData();
+    setState(() => _locationData = data);
 
-    // Start listening for real-time location updates
-    _locationSubscription = _gpsController.getPositionStream().listen(
-      (newPosition) {
-        setState(() => _currentLocation = newPosition);
+    // Start listening for real-time location updates with heading
+    _locationSubscription = _gpsController.getLocationDataStream().listen(
+      (newData) {
+        setState(() => _locationData = newData);
       },
       onError: (error) {
         debugPrint('Location stream error: $error');
@@ -49,9 +50,44 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   void _centerOnCurrentLocation() {
-    if (_currentLocation != null && _isMapReady) {
-      _mapController.move(_currentLocation!, 17);
+    if (_locationData != null && _isMapReady) {
+      _mapController.move(_locationData!.position, 17);
     }
+  }
+
+  /// Builds the location marker with heading indicator (cone/arrow)
+  Widget _buildLocationMarker(double heading) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        // Heading cone (direction indicator) - only show if heading is valid
+        if (heading >= 0 && heading <= 360)
+          Transform.rotate(
+            angle: heading * (math.pi / 180), // Convert degrees to radians
+            child: CustomPaint(
+              size: const Size(60, 60),
+              painter: _HeadingConePainter(),
+            ),
+          ),
+        // Inner circle (precise location dot)
+        Container(
+          width: 16,
+          height: 16,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.blue,
+            border: Border.all(color: Colors.white, width: 3),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.3),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -75,7 +111,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     markerStateBloc: BlocProvider.of<MarkerStateBloc>(context))
                 .fetchListMarker(state.markers, context);
 
-            final isInitialLoading = _currentLocation == null || state.isLoading;
+            final isInitialLoading = _locationData == null || state.isLoading;
 
             if (isInitialLoading) {
               return Center(
@@ -85,7 +121,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     const CircularProgressIndicator(),
                     const SizedBox(height: 16),
                     Text(
-                      _currentLocation == null
+                      _locationData == null
                           ? 'Mendapatkan lokasi...'
                           : 'Memuat data...',
                       style: Theme.of(context).textTheme.bodyMedium,
@@ -100,7 +136,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 FlutterMap(
                   mapController: _mapController,
                   options: MapOptions(
-                    initialCenter: _currentLocation!,
+                    initialCenter: _locationData!.position,
                     initialZoom: 17,
                     onMapReady: () {
                       setState(() => _isMapReady = true);
@@ -116,24 +152,27 @@ class _DashboardPageState extends State<DashboardPage> {
                           ? const ['a', 'b', 'c', 'd']
                           : const [],
                     ),
-                    // Circle layer for current location
+                    // Circle layer for current location (accuracy indicator)
                     CircleLayer(
                       circles: [
                         // Outer circle (accuracy indicator)
                         CircleMarker(
-                          point: _currentLocation!,
+                          point: _locationData!.position,
                           radius: 40,
                           color: Colors.blue.withValues(alpha: 0.15),
                           borderColor: Colors.blue.withValues(alpha: 0.3),
                           borderStrokeWidth: 1,
                         ),
-                        // Inner circle (precise location)
-                        CircleMarker(
-                          point: _currentLocation!,
-                          radius: 8,
-                          color: Colors.blue,
-                          borderColor: Colors.white,
-                          borderStrokeWidth: 3,
+                      ],
+                    ),
+                    // Location marker with heading indicator
+                    MarkerLayer(
+                      markers: [
+                        Marker(
+                          point: _locationData!.position,
+                          width: 60,
+                          height: 60,
+                          child: _buildLocationMarker(_locationData!.heading),
                         ),
                       ],
                     ),
@@ -172,7 +211,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   right: 20,
                   child: FloatingMapButton(
                     controller: _mapController,
-                    currentLocation: _currentLocation,
+                    currentLocation: _locationData?.position,
                   ),
                 ),
                 if (state.isProcessing)
@@ -242,4 +281,45 @@ class _DashboardPageState extends State<DashboardPage> {
     if (state.isDeleting) return 'Menghapus...';
     return 'Memproses...';
   }
+}
+
+/// Custom painter for the heading cone/arrow indicator
+class _HeadingConePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.blue.withValues(alpha: 0.4)
+      ..style = PaintingStyle.fill;
+
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
+
+    // Draw a cone/wedge shape pointing upward (north)
+    // The transform.rotate in the parent widget will rotate it to match heading
+    final path = ui.Path();
+
+    // Start from center
+    path.moveTo(center.dx, center.dy);
+
+    // Draw arc from -30 degrees to +30 degrees (60 degree cone)
+    // Using negative Y for "up" direction
+    const coneAngle = 30 * (math.pi / 180); // 30 degrees in radians
+    const startAngle = -math.pi / 2 - coneAngle; // Start at -120 degrees (pointing up-left)
+    const sweepAngle = coneAngle * 2; // 60 degree sweep
+
+    path.arcTo(
+      Rect.fromCircle(center: center, radius: radius * 0.85),
+      startAngle,
+      sweepAngle,
+      false,
+    );
+
+    // Close path back to center
+    path.close();
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
