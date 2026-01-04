@@ -196,8 +196,8 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
           AddMarkerData(
             marker: EntitiesMarker(
               uid: '',
-              uidCreator: defaultUser.uid,
-              uidUser: [defaultUser.uid],
+              uidCreator: defaultUser.id,
+              uidUser: [defaultUser.id],
               name: _nameController.text.trim(),
               description: _descriptionController.text.trim(),
               strain: _strainController.text.trim(),

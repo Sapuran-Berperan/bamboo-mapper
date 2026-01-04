@@ -1,25 +1,21 @@
-import 'package:bamboo_app/utils/textfield_validator.dart';
 import 'package:bamboo_app/src/domain/entities/e_user.dart';
 import 'package:bamboo_app/src/domain/infrastructure/i_user.dart';
 
 class ServiceUser {
-  Future<EntitiesUser?> signUp(EntitiesUser user) async {
-    final res = await InfrastructureUser().createUser(user);
-    return res;
+  Future<EntitiesUser> signUp({
+    required String name,
+    required String email,
+    required String password,
+  }) async {
+    return InfrastructureUser().createUser(
+      name: name,
+      email: email,
+      password: password,
+    );
   }
 
   Future<EntitiesUser?> signIn(String email, String password) async {
-    if (TextfieldValidator.email(email) != null ||
-        TextfieldValidator.password(password) != null) {
-      return null;
-    }
-
-    final res = await InfrastructureUser().readUser(email);
-    if (res != null) {
-      if (res.password == password) {
-        return res;
-      }
-    }
-    return null;
+    // TODO: Will be migrated to use new backend login API
+    throw UnimplementedError('Login will be migrated separately');
   }
 }
