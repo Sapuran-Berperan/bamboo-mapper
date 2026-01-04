@@ -6,6 +6,7 @@ import 'package:bamboo_app/src/app/presentation/widgets/atom/delete_button.dart'
 import 'package:bamboo_app/src/app/presentation/widgets/atom/header_auth.dart';
 import 'package:bamboo_app/src/app/presentation/widgets/atom/image_uploader.dart';
 import 'package:bamboo_app/src/app/presentation/widgets/atom/modal_snackbar.dart';
+import 'package:bamboo_app/src/app/presentation/widgets/molecule/location_picker.dart';
 import 'package:bamboo_app/src/app/presentation/widgets/atom/submit_button.dart';
 import 'package:bamboo_app/src/app/routes/routes.dart';
 import 'package:bamboo_app/src/app/use_cases/gps_controller.dart';
@@ -126,20 +127,19 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
     }
   }
 
-  // Validate required fields
+  // Validate required fields (name, latitude, longitude per API docs)
   bool _validateForm() {
     if (_nameController.text.trim().isEmpty) {
       ModalSnackbar(context).showError('Nama lokasi harus diisi');
       return false;
     }
-    if (_qtyController.text.trim().isEmpty) {
-      ModalSnackbar(context).showError('Jumlah harus diisi');
-      return false;
-    }
-    final qty = int.tryParse(_qtyController.text);
-    if (qty == null || qty < 0) {
-      ModalSnackbar(context).showError('Jumlah harus berupa angka valid');
-      return false;
+    // Quantity is optional, but if provided must be valid
+    if (_qtyController.text.trim().isNotEmpty) {
+      final qty = int.tryParse(_qtyController.text);
+      if (qty == null || qty < 0) {
+        ModalSnackbar(context).showError('Jumlah harus berupa angka valid');
+        return false;
+      }
     }
     return true;
   }
@@ -432,9 +432,9 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
                   flex: 1,
                   child: AuthTextField(
                     controller: _qtyController,
-                    hintText: 'Jumlah *',
+                    hintText: 'Jumlah',
                     label: 'Jumlah',
-                    validator: TextfieldValidator.name,
+                    optional: true,
                     type: TextInputType.number,
                   ),
                 ),
@@ -463,31 +463,10 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
               type: TextInputType.phone,
             ),
             SizedBox(height: 0.012.sh),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Flexible(
-                  flex: 1,
-                  child: AuthTextField(
-                    controller: _latitudeController,
-                    hintText: 'Latitude',
-                    label: 'Latitude',
-                    optional: true,
-                    type: const TextInputType.numberWithOptions(decimal: true, signed: true),
-                  ),
-                ),
-                Padding(padding: EdgeInsets.only(left: 0.02.sw)),
-                Flexible(
-                  flex: 1,
-                  child: AuthTextField(
-                    controller: _longitudeController,
-                    hintText: 'Longitude',
-                    label: 'Longitude',
-                    optional: true,
-                    type: const TextInputType.numberWithOptions(decimal: true, signed: true),
-                  ),
-                ),
-              ],
+            LocationPicker(
+              latitudeController: _latitudeController,
+              longitudeController: _longitudeController,
+              enabled: !_isSubmitting,
             ),
             SizedBox(height: 0.012.sh),
             ImageUploader(onImageSelected: _onImageChanged),
