@@ -12,9 +12,33 @@ class InfrastructureMarker implements RepositoryPolygon {
 
   @override
   Future<EntitiesMarker?> createMarker(EntitiesMarker marker) async {
-    // TODO: Migrate to new backend API
-    // For now, this is disabled as create requires new backend integration
-    throw UnimplementedError('Create marker not yet migrated to new backend');
+    try {
+      // Check if image path is provided and valid
+      String? imagePath;
+      if (marker.imageUrl.isNotEmpty && !marker.imageUrl.startsWith('http')) {
+        final file = File(marker.imageUrl);
+        if (await file.exists()) {
+          imagePath = marker.imageUrl;
+        }
+      }
+
+      final response = await _remoteDataSource.createMarker(
+        name: marker.name,
+        latitude: marker.location.latitude.toString(),
+        longitude: marker.location.longitude.toString(),
+        description: marker.description,
+        strain: marker.strain,
+        quantity: marker.quantity,
+        ownerName: marker.ownerName,
+        ownerContact: marker.ownerContact,
+        imagePath: imagePath,
+      );
+
+      return EntitiesMarker.fromResponse(response);
+    } catch (e) {
+      debugPrint('Error creating marker: $e');
+      rethrow;
+    }
   }
 
   @override
@@ -41,14 +65,51 @@ class InfrastructureMarker implements RepositoryPolygon {
 
   @override
   Future<EntitiesMarker?> updateMarker(EntitiesMarker marker, {bool keepExistingImage = false}) async {
-    // TODO: Migrate to new backend API
-    throw UnimplementedError('Update marker not yet migrated to new backend');
+    try {
+      // Determine if we should upload a new image
+      String? imagePath;
+      if (!keepExistingImage && marker.imageUrl.isNotEmpty) {
+        // Check for special prefix that indicates keeping existing image
+        if (marker.imageUrl.startsWith('NULL:')) {
+          // No new image, keep existing (don't send image field)
+          imagePath = null;
+        } else if (!marker.imageUrl.startsWith('http')) {
+          // Local file path - upload new image
+          final file = File(marker.imageUrl);
+          if (await file.exists()) {
+            imagePath = marker.imageUrl;
+          }
+        }
+      }
+
+      final response = await _remoteDataSource.updateMarker(
+        id: marker.id,
+        name: marker.name,
+        latitude: marker.location.latitude.toString(),
+        longitude: marker.location.longitude.toString(),
+        description: marker.description,
+        strain: marker.strain,
+        quantity: marker.quantity,
+        ownerName: marker.ownerName,
+        ownerContact: marker.ownerContact,
+        imagePath: imagePath,
+      );
+
+      return EntitiesMarker.fromResponse(response);
+    } catch (e) {
+      debugPrint('Error updating marker: $e');
+      rethrow;
+    }
   }
 
   @override
   Future<void> deleteMarker(EntitiesMarker marker) async {
-    // TODO: Migrate to new backend API
-    throw UnimplementedError('Delete marker not yet migrated to new backend');
+    try {
+      await _remoteDataSource.deleteMarker(marker.id);
+    } catch (e) {
+      debugPrint('Error deleting marker: $e');
+      rethrow;
+    }
   }
 
   @override

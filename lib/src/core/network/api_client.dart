@@ -67,6 +67,83 @@ class ApiClient {
     }
   }
 
+  Future<ApiResponse<T>> put<T>(
+    String path, {
+    Map<String, dynamic>? data,
+    T Function(Map<String, dynamic>)? fromJson,
+  }) async {
+    try {
+      final response = await _dio.put<Map<String, dynamic>>(path, data: data);
+      return _handleResponse(response, fromJson);
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  Future<ApiResponse<T>> delete<T>(
+    String path, {
+    T Function(Map<String, dynamic>)? fromJson,
+  }) async {
+    try {
+      final response = await _dio.delete<Map<String, dynamic>>(path);
+      return _handleResponse(response, fromJson);
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  /// POST with multipart/form-data for file uploads
+  Future<ApiResponse<T>> postMultipart<T>(
+    String path, {
+    required Map<String, dynamic> fields,
+    String? filePath,
+    String fileFieldName = 'image',
+    T Function(Map<String, dynamic>)? fromJson,
+  }) async {
+    try {
+      final formData = FormData.fromMap({
+        ...fields,
+        if (filePath != null)
+          fileFieldName: await MultipartFile.fromFile(filePath),
+      });
+
+      final response = await _dio.post<Map<String, dynamic>>(
+        path,
+        data: formData,
+        options: Options(contentType: 'multipart/form-data'),
+      );
+      return _handleResponse(response, fromJson);
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  /// PUT with multipart/form-data for file uploads
+  Future<ApiResponse<T>> putMultipart<T>(
+    String path, {
+    required Map<String, dynamic> fields,
+    String? filePath,
+    String fileFieldName = 'image',
+    T Function(Map<String, dynamic>)? fromJson,
+  }) async {
+    try {
+      final formData = FormData.fromMap({
+        ...fields,
+        if (filePath != null)
+          fileFieldName: await MultipartFile.fromFile(filePath),
+      });
+
+      final response = await _dio.put<Map<String, dynamic>>(
+        path,
+        data: formData,
+        options: Options(contentType: 'multipart/form-data'),
+      );
+      return _handleResponse(response, fromJson);
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
   /// GET request that returns a list of items in the 'data' field
   Future<ApiListResponse<T>> getList<T>(
     String path, {
