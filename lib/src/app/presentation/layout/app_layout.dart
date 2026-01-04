@@ -1,6 +1,7 @@
 import 'package:bamboo_app/src/app/blocs/map_type_state.dart';
 import 'package:bamboo_app/src/app/blocs/marker_state.dart';
-import 'package:bamboo_app/src/app/routes/routes.dart';
+import 'package:bamboo_app/src/app/blocs/user_logged_state.dart';
+import 'package:bamboo_app/src/app/use_cases/auth_controller.dart';
 import 'package:bamboo_app/src/domain/service/s_marker.dart';
 import 'package:bamboo_app/utils/default_user.dart';
 import 'package:bamboo_app/utils/util_excel.dart';
@@ -99,7 +100,12 @@ class AppLayout extends StatelessWidget {
                   ListTile(
                     title: const Text('Logout'),
                     leading: const Icon(Icons.logout),
-                    onTap: () => router.go('/login'),
+                    onTap: () async {
+                      // Get BLoC reference BEFORE closing drawer
+                      final userBloc = context.read<UserLoggedStateBloc>();
+                      Navigator.pop(context); // Close drawer
+                      await AuthController(userBloc: userBloc).logout();
+                    },
                   ),
                 ],
               ),

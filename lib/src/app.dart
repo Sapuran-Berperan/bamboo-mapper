@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:bamboo_app/src/app/routes/routes.dart';
 import 'package:bamboo_app/src/app/blocs/theme_state.dart';
+import 'package:bamboo_app/src/app/blocs/user_logged_state.dart';
 import 'package:bamboo_app/src/app/presentation/themes/ui_mode.dart';
 
 class MyApp extends StatelessWidget {
@@ -12,8 +13,11 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return ScreenUtilInit(
       minTextAdapt: true,
-      child: BlocProvider(
-        create: (context) => ThemeStateBloc(),
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider(create: (context) => ThemeStateBloc()),
+          BlocProvider(create: (context) => UserLoggedStateBloc()),
+        ],
         child: BlocBuilder<ThemeStateBloc, ThemeState>(
           builder: (context, state) {
             return MaterialApp.router(

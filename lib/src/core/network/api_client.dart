@@ -4,6 +4,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'api_exception.dart';
 import 'api_response.dart';
+import 'auth_interceptor.dart';
 
 class ApiClient {
   ApiClient._() {
@@ -18,6 +19,9 @@ class ApiClient {
         },
       ),
     );
+
+    // Add auth interceptor for automatic token refresh
+    _dio.interceptors.add(AuthInterceptor(dio: _dio));
 
     if (kDebugMode) {
       _dio.interceptors.add(
