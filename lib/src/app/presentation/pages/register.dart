@@ -32,7 +32,7 @@ class _RegisterPageState extends State<RegisterPage> {
   Future<void> _handleRegister() async {
     setState(() => _isLoading = true);
     try {
-      final result = await const AuthController().signUp(
+      final result = await AuthController().signUp(
         name: _controllerName.text.trim(),
         email: _controllerEmail.text.trim(),
         password: _controllerPassword.text,
