@@ -65,7 +65,7 @@ class CustomInfoWindow extends StatelessWidget {
                 flex: 1,
                 child: InfoWindowData(
                   header: 'Quantity',
-                  data: marker.qty.toString(),
+                  data: marker.quantity.toString(),
                   half: true,
                 ),
               ),
@@ -79,7 +79,7 @@ class CustomInfoWindow extends StatelessWidget {
                   header: 'Owner Contact',
                   data: '${marker.ownerName} (${marker.ownerContact})')
               : const SizedBox(),
-          ImageSnippet(urlImage: marker.urlImage),
+          ImageSnippet(imageUrl: marker.imageUrl),
           SizedBox(height: 0.025.sh),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -90,7 +90,7 @@ class CustomInfoWindow extends StatelessWidget {
                   isScrollControlled: true,
                   builder: (BuildContext modalContext) => ModalBottomSheet(
                     parentContext: context,
-                    uidMarker: marker.uid,
+                    markerId: marker.id,
                   ),
                 ),
                 text: 'Update',

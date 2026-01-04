@@ -67,6 +67,41 @@ class ApiClient {
     }
   }
 
+  /// GET request that returns a list of items in the 'data' field
+  Future<ApiListResponse<T>> getList<T>(
+    String path, {
+    Map<String, String>? queryParameters,
+    required T Function(Map<String, dynamic>) fromJson,
+  }) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        path,
+        queryParameters: queryParameters,
+      );
+      return _handleListResponse(response, fromJson);
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  ApiListResponse<T> _handleListResponse<T>(
+    Response<Map<String, dynamic>> response,
+    T Function(Map<String, dynamic>) fromJson,
+  ) {
+    final data = response.data;
+    if (data == null) {
+      throw const ServerException('Response kosong dari server');
+    }
+
+    final apiResponse = ApiListResponse.fromJson(data, fromJson);
+
+    if (!apiResponse.isSuccess) {
+      _throwApiException(response.statusCode, apiResponse.meta);
+    }
+
+    return apiResponse;
+  }
+
   ApiResponse<T> _handleResponse<T>(
     Response<Map<String, dynamic>> response,
     T Function(Map<String, dynamic>)? fromJson,

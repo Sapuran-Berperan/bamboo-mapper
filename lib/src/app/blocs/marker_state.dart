@@ -1,6 +1,5 @@
 import 'package:bamboo_app/src/domain/entities/e_marker.dart';
 import 'package:bamboo_app/src/domain/service/s_marker.dart';
-import 'package:bamboo_app/utils/default_user.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 abstract class MarkerEvent {}
@@ -60,11 +59,13 @@ class MarkerState {
 }
 
 class MarkerStateBloc extends Bloc<MarkerEvent, MarkerState> {
+  final _service = ServiceMarker();
+
   MarkerStateBloc() : super(MarkerState(markers: {})) {
     on<FetchMarkerData>((event, emit) async {
       emit(state.copyWith(status: MarkerStatus.loading));
       try {
-        final markers = await ServiceMarker().fetchListMarker(defaultUser.id);
+        final markers = await _service.fetchListMarker();
         emit(state.copyWith(markers: markers, status: MarkerStatus.loaded));
       } catch (e) {
         emit(state.copyWith(
@@ -77,8 +78,8 @@ class MarkerStateBloc extends Bloc<MarkerEvent, MarkerState> {
     on<AddMarkerData>((event, emit) async {
       emit(state.copyWith(status: MarkerStatus.adding));
       try {
-        await ServiceMarker().addMarker(event.marker);
-        final markers = await ServiceMarker().fetchListMarker(defaultUser.id);
+        await _service.addMarker(event.marker);
+        final markers = await _service.fetchListMarker();
         emit(state.copyWith(markers: markers, status: MarkerStatus.loaded));
       } catch (e) {
         emit(state.copyWith(
@@ -91,8 +92,8 @@ class MarkerStateBloc extends Bloc<MarkerEvent, MarkerState> {
     on<UpdateMarkerData>((event, emit) async {
       emit(state.copyWith(status: MarkerStatus.updating));
       try {
-        await ServiceMarker().updateMarker(event.marker, keepExistingImage: event.keepExistingImage);
-        final markers = await ServiceMarker().fetchListMarker(defaultUser.id);
+        await _service.updateMarker(event.marker, keepExistingImage: event.keepExistingImage);
+        final markers = await _service.fetchListMarker();
         emit(state.copyWith(markers: markers, status: MarkerStatus.loaded));
       } catch (e) {
         emit(state.copyWith(
@@ -105,8 +106,8 @@ class MarkerStateBloc extends Bloc<MarkerEvent, MarkerState> {
     on<DeleteMarkerData>((event, emit) async {
       emit(state.copyWith(status: MarkerStatus.deleting));
       try {
-        await ServiceMarker().deleteMarker(event.marker);
-        final markers = await ServiceMarker().fetchListMarker(defaultUser.id);
+        await _service.deleteMarker(event.marker);
+        final markers = await _service.fetchListMarker();
         emit(state.copyWith(markers: markers, status: MarkerStatus.loaded));
       } catch (e) {
         emit(state.copyWith(

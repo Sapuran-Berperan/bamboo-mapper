@@ -1,62 +1,27 @@
 import 'dart:io';
 
+import 'package:bamboo_app/src/data/datasources/marker_remote_datasource.dart';
 import 'package:bamboo_app/src/domain/entities/e_marker.dart';
 import 'package:bamboo_app/src/domain/repositories/r_marker.dart';
 import 'package:flutter/foundation.dart';
-import 'package:path/path.dart' as p;
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:uuid/uuid.dart';
 
 class InfrastructureMarker implements RepositoryPolygon {
-  final Uuid _uuid = const Uuid();
   final db = Supabase.instance.client;
-
-  /// Extracts a unique filename from a file path using the path package.
-  /// Adds timestamp prefix to ensure uniqueness.
-  String _extractUniqueFilename(String filePath) {
-    if (filePath.isEmpty) return '';
-    final filename = p.basename(filePath);
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    return '$timestamp/$filename';
-  }
+  final _remoteDataSource = MarkerRemoteDataSource.instance;
 
   @override
   Future<EntitiesMarker?> createMarker(EntitiesMarker marker) async {
-    String publicURL = '';
-    String shortImageURL = _extractUniqueFilename(marker.urlImage);
-
-    try {
-      if (marker.urlImage.isNotEmpty && shortImageURL.isNotEmpty) {
-        final imageRes = await createImageMarker(marker.urlImage, shortImageURL);
-        if (!imageRes) {
-          debugPrint('Warning: Image not uploaded, continuing without image');
-        } else {
-          publicURL =
-              db.storage.from('bamboo_images').getPublicUrl(shortImageURL);
-        }
-      }
-      final res = await db
-          .from('marker')
-          .insert(marker
-              .copyWith(
-                uid: _uuid.v4(),
-                urlImage: publicURL,
-              )
-              .toJSON())
-          .select()
-          .single();
-      return EntitiesMarker.fromJSON(res);
-    } catch (e) {
-      debugPrint('Error creating marker: $e');
-      rethrow; // Rethrow so the service/bloc can catch it
-    }
+    // TODO: Migrate to new backend API
+    // For now, this is disabled as create requires new backend integration
+    throw UnimplementedError('Create marker not yet migrated to new backend');
   }
 
   @override
-  Future<EntitiesMarker?> readMarker(String uid) async {
+  Future<EntitiesMarker?> readMarker(String id) async {
     try {
-      final res = await db.from('marker').select().eq('uid', uid).single();
-      return EntitiesMarker.fromJSON(res);
+      final response = await _remoteDataSource.getMarkerById(id);
+      return EntitiesMarker.fromResponse(response);
     } catch (e) {
       debugPrint('Error reading marker: $e');
       rethrow;
@@ -64,75 +29,26 @@ class InfrastructureMarker implements RepositoryPolygon {
   }
 
   @override
-  Future<List<EntitiesMarker?>> readListMarker(String uidUser) async {
+  Future<List<EntitiesMarker>> readListMarker() async {
     try {
-      final res =
-          await db.from('marker').select().contains('uidUser', [uidUser]);
-      return res.map((e) => EntitiesMarker.fromJSON(e)).toList();
+      final response = await _remoteDataSource.getAllMarkers();
+      return response.map((e) => EntitiesMarker.fromListResponse(e)).toList();
     } catch (e) {
       debugPrint('Error reading marker list: $e');
-      return []; // Return empty list instead of [null] for safer handling
+      return [];
     }
   }
 
   @override
   Future<EntitiesMarker?> updateMarker(EntitiesMarker marker, {bool keepExistingImage = false}) async {
-    String publicURL = '';
-    final oldMarker = await readMarker(marker.uid);
-
-    try {
-      // Check if we should keep existing image:
-      // 1. keepExistingImage flag is true, OR
-      // 2. urlImage starts with 'NULL:' (convention from modal when no new image selected)
-      final shouldKeepExistingImage = keepExistingImage || marker.urlImage.startsWith('NULL:');
-
-      if (shouldKeepExistingImage) {
-        // Keep the existing image URL from the old marker
-        publicURL = oldMarker?.urlImage ?? '';
-      } else if (marker.urlImage.isNotEmpty) {
-        // Upload new image and delete old one
-        String shortImageURL = _extractUniqueFilename(marker.urlImage);
-        if (shortImageURL.isNotEmpty) {
-          final imageRes =
-              await updateImageMarker(marker.urlImage, shortImageURL, oldMarker?.urlImage ?? '');
-          if (!imageRes) {
-            debugPrint('Warning: Image not updated, keeping old image');
-            publicURL = oldMarker?.urlImage ?? '';
-          } else {
-            publicURL =
-                db.storage.from('bamboo_images').getPublicUrl(shortImageURL);
-          }
-        }
-      }
-
-      final res = await db
-          .from('marker')
-          .update(marker
-              .copyWith(
-                urlImage: publicURL,
-              )
-              .toJSON())
-          .eq('uid', marker.uid)
-          .select()
-          .single();
-      return EntitiesMarker.fromJSON(res);
-    } catch (e) {
-      debugPrint('Error updating marker: $e');
-      rethrow; // Rethrow so the service/bloc can catch it
-    }
+    // TODO: Migrate to new backend API
+    throw UnimplementedError('Update marker not yet migrated to new backend');
   }
 
   @override
   Future<void> deleteMarker(EntitiesMarker marker) async {
-    try {
-      if (marker.urlImage.isNotEmpty) {
-        await deteleImageMarker(marker.urlImage);
-      }
-      await db.from('marker').delete().eq('uid', marker.uid);
-    } catch (e) {
-      debugPrint('Error deleting marker: $e');
-      rethrow; // Rethrow so the service/bloc can catch it
-    }
+    // TODO: Migrate to new backend API
+    throw UnimplementedError('Delete marker not yet migrated to new backend');
   }
 
   @override

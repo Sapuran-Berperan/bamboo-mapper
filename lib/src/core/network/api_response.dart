@@ -41,3 +41,29 @@ class ApiResponse<T> {
 
   bool get isSuccess => meta.success;
 }
+
+/// Response wrapper for endpoints that return a list in the 'data' field
+class ApiListResponse<T> {
+  const ApiListResponse({
+    required this.meta,
+    required this.data,
+  });
+
+  final ApiMeta meta;
+  final List<T> data;
+
+  factory ApiListResponse.fromJson(
+    Map<String, dynamic> json,
+    T Function(Map<String, dynamic>) fromJsonT,
+  ) {
+    final dataList = json['data'] as List<dynamic>? ?? [];
+    return ApiListResponse(
+      meta: ApiMeta.fromJson(json['meta'] as Map<String, dynamic>),
+      data: dataList
+          .map((item) => fromJsonT(item as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+
+  bool get isSuccess => meta.success;
+}

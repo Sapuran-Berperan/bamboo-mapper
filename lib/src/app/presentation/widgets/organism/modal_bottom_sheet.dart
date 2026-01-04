@@ -11,7 +11,6 @@ import 'package:bamboo_app/src/app/routes/routes.dart';
 import 'package:bamboo_app/src/app/use_cases/gps_controller.dart';
 import 'package:bamboo_app/src/domain/entities/e_marker.dart';
 import 'package:bamboo_app/src/domain/service/s_marker.dart';
-import 'package:bamboo_app/utils/default_user.dart';
 import 'package:bamboo_app/utils/textfield_validator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -20,10 +19,10 @@ import 'package:latlong2/latlong.dart';
 
 class ModalBottomSheet extends StatefulWidget {
   final BuildContext parentContext;
-  final String? uidMarker;
+  final String? markerId;
 
   const ModalBottomSheet(
-      {super.key, required this.parentContext, this.uidMarker});
+      {super.key, required this.parentContext, this.markerId});
 
   @override
   State<ModalBottomSheet> createState() => _ModalBottomSheetState();
@@ -48,19 +47,19 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
   bool _waitingForResponse = false;
   String? _pendingOperation;
 
-  bool get _isEditMode => widget.uidMarker != null;
+  bool get _isEditMode => widget.markerId != null;
 
   @override
   void initState() {
     super.initState();
     if (_isEditMode) {
-      _markerFuture = ServiceMarker().fetchMarker(widget.uidMarker!);
+      _markerFuture = ServiceMarker().fetchMarker(widget.markerId!);
       _markerFuture!.then((marker) {
         if (mounted) {
           setState(() {
             _nameController.text = marker.name;
             _descriptionController.text = marker.description;
-            _qtyController.text = marker.qty.toString();
+            _qtyController.text = marker.quantity.toString();
             _strainController.text = marker.strain;
             _ownerNameController.text = marker.ownerName;
             _ownerContactController.text = marker.ownerContact;
@@ -191,22 +190,24 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
 
       setState(() => _waitingForResponse = true);
 
+      final now = DateTime.now();
       if (!_isEditMode) {
         markerBloc.add(
           AddMarkerData(
             marker: EntitiesMarker(
-              uid: '',
-              uidCreator: defaultUser.id,
-              uidUser: [defaultUser.id],
+              id: '',
+              shortCode: '',
+              creatorId: '',
               name: _nameController.text.trim(),
               description: _descriptionController.text.trim(),
               strain: _strainController.text.trim(),
-              qty: int.tryParse(_qtyController.text) ?? 0,
-              urlImage: _image?.path ?? '',
+              quantity: int.tryParse(_qtyController.text) ?? 0,
+              imageUrl: _image?.path ?? '',
               ownerName: _ownerNameController.text.trim(),
               ownerContact: _ownerContactController.text.trim(),
               location: _getLocation(currentPosition),
-              createdAt: DateTime.now(),
+              createdAt: now,
+              updatedAt: now,
             ),
           ),
         );
@@ -214,18 +215,19 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
         markerBloc.add(
           UpdateMarkerData(
             marker: EntitiesMarker(
-              uid: marker!.uid,
-              uidCreator: marker.uidCreator,
-              uidUser: marker.uidUser,
+              id: marker!.id,
+              shortCode: marker.shortCode,
+              creatorId: marker.creatorId,
               name: _nameController.text.trim(),
               description: _descriptionController.text.trim(),
               strain: _strainController.text.trim(),
-              qty: int.tryParse(_qtyController.text) ?? marker.qty,
-              urlImage: _image == null ? 'NULL:${marker.urlImage}' : _image!.path,
+              quantity: int.tryParse(_qtyController.text) ?? marker.quantity,
+              imageUrl: _image == null ? 'NULL:${marker.imageUrl}' : _image!.path,
               ownerName: _ownerNameController.text.trim(),
               ownerContact: _ownerContactController.text.trim(),
               location: _getLocation(currentPosition),
               createdAt: marker.createdAt,
+              updatedAt: now,
             ),
           ),
         );
