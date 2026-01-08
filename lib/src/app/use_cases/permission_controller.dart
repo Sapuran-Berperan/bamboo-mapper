@@ -1,4 +1,5 @@
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -42,6 +43,11 @@ class PermissionController {
   }
 
   Future<bool> reqMediaPermission() async {
+    // Skip media permission on web - browsers handle this differently
+    if (kIsWeb) {
+      return true;
+    }
+
     PermissionStatus status;
     if (await Permission.photos.isPermanentlyDenied ||
         await Permission.mediaLibrary.isPermanentlyDenied) {

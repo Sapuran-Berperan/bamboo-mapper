@@ -1,175 +1,168 @@
 import 'dart:io';
 
+import 'package:bamboo_app/src/data/datasources/marker_remote_datasource.dart';
 import 'package:bamboo_app/src/domain/entities/e_marker.dart';
 import 'package:bamboo_app/src/domain/repositories/r_marker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:uuid/uuid.dart';
 
 class InfrastructureMarker implements RepositoryPolygon {
-  final Uuid _uuid = const Uuid();
   final db = Supabase.instance.client;
+  final _remoteDataSource = MarkerRemoteDataSource.instance;
 
   @override
   Future<EntitiesMarker?> createMarker(EntitiesMarker marker) async {
-    String publicURL = '';
-    String shortImageURL = '';
-    if (marker.urlImage.contains('file_picker/')) {
-      shortImageURL = marker.urlImage.split('file_picker/').last;
-    }
-    if (marker.urlImage.contains('cache/')) {
-      shortImageURL = marker.urlImage.split('cache/').last;
-    }
     try {
-      if (marker.urlImage.isNotEmpty) {
-        final imageRes = await createImageMarker(marker.urlImage);
-        if (!imageRes) {
-          print('Error: Image not uploaded');
+      // Check if image path is provided and valid
+      String? imagePath;
+      if (marker.imageUrl.isNotEmpty && !marker.imageUrl.startsWith('http')) {
+        final file = File(marker.imageUrl);
+        if (await file.exists()) {
+          imagePath = marker.imageUrl;
         }
-        publicURL =
-            db.storage.from('bamboo_images').getPublicUrl(shortImageURL);
       }
-      final res = await db
-          .from('marker')
-          .insert(marker
-              .copyWith(
-                uid: _uuid.v4(),
-                urlImage: publicURL,
-              )
-              .toJSON())
-          .select()
-          .single();
-      return EntitiesMarker.fromJSON(res);
+
+      final response = await _remoteDataSource.createMarker(
+        name: marker.name,
+        latitude: marker.location.latitude.toString(),
+        longitude: marker.location.longitude.toString(),
+        description: marker.description,
+        strain: marker.strain,
+        quantity: marker.quantity,
+        ownerName: marker.ownerName,
+        ownerContact: marker.ownerContact,
+        imagePath: imagePath,
+      );
+
+      return EntitiesMarker.fromResponse(response);
     } catch (e) {
-      print('Error: $e');
-      return null;
+      debugPrint('Error creating marker: $e');
+      rethrow;
     }
   }
 
   @override
-  Future<EntitiesMarker?> readMarker(String uid) async {
+  Future<EntitiesMarker?> readMarker(String id) async {
     try {
-      final res = await db.from('marker').select().eq('uid', uid).single();
-      return EntitiesMarker.fromJSON(res);
+      final response = await _remoteDataSource.getMarkerById(id);
+      return EntitiesMarker.fromResponse(response);
     } catch (e) {
-      print('Error: $e');
-      return null;
+      debugPrint('Error reading marker: $e');
+      rethrow;
     }
   }
 
   @override
-  Future<List<EntitiesMarker?>> readListMarker(String uidUser) async {
+  Future<List<EntitiesMarker>> readListMarker() async {
     try {
-      final res =
-          await db.from('marker').select().contains('uidUser', [uidUser]);
-      return res.map((e) => EntitiesMarker.fromJSON(e)).toList();
+      final response = await _remoteDataSource.getAllMarkers();
+      return response.map((e) => EntitiesMarker.fromListResponse(e)).toList();
     } catch (e) {
-      print('Error: $e');
-      return [null];
+      debugPrint('Error reading marker list: $e');
+      return [];
     }
   }
 
   @override
-  Future<EntitiesMarker?> updateMarker(EntitiesMarker marker) async {
-    String publicURL = '';
-    final oldMarker = await readMarker(marker.uid);
-    String shortImageURL = '';
-    if (marker.urlImage.contains('file_picker/')) {
-      shortImageURL = marker.urlImage.split('file_picker/').last;
-    }
-    if (marker.urlImage.contains('cache/')) {
-      shortImageURL = marker.urlImage.split('cache/').last;
-    }
+  Future<EntitiesMarker?> updateMarker(EntitiesMarker marker, {bool keepExistingImage = false}) async {
     try {
-      if (!marker.urlImage.contains('NULL:')) {
-        if (marker.urlImage.isNotEmpty) {
-          final imageRes =
-              await updateImageMarker(marker.urlImage, oldMarker!.urlImage);
-          if (!imageRes) {
-            print('Error: Image not updated');
+      // Determine if we should upload a new image
+      String? imagePath;
+      if (!keepExistingImage && marker.imageUrl.isNotEmpty) {
+        // Check for special prefix that indicates keeping existing image
+        if (marker.imageUrl.startsWith('NULL:')) {
+          // No new image, keep existing (don't send image field)
+          imagePath = null;
+        } else if (!marker.imageUrl.startsWith('http')) {
+          // Local file path - upload new image
+          final file = File(marker.imageUrl);
+          if (await file.exists()) {
+            imagePath = marker.imageUrl;
           }
-          publicURL =
-              db.storage.from('bamboo_images').getPublicUrl(shortImageURL);
         }
       }
-      final res = await db
-          .from('marker')
-          .update(marker
-              .copyWith(
-                uid: _uuid.v4(),
-                urlImage: marker.urlImage.contains('NULL:')
-                    ? marker.urlImage.split('NULL:').last
-                    : publicURL,
-              )
-              .toJSON())
-          .eq('uid', marker.uid)
-          .select()
-          .single();
-      return EntitiesMarker.fromJSON(res);
+
+      final response = await _remoteDataSource.updateMarker(
+        id: marker.id,
+        name: marker.name,
+        latitude: marker.location.latitude.toString(),
+        longitude: marker.location.longitude.toString(),
+        description: marker.description,
+        strain: marker.strain,
+        quantity: marker.quantity,
+        ownerName: marker.ownerName,
+        ownerContact: marker.ownerContact,
+        imagePath: imagePath,
+      );
+
+      return EntitiesMarker.fromResponse(response);
     } catch (e) {
-      print('Error: $e');
-      return null;
+      debugPrint('Error updating marker: $e');
+      rethrow;
     }
   }
 
   @override
   Future<void> deleteMarker(EntitiesMarker marker) async {
     try {
-      if (marker.urlImage.isNotEmpty) {
-        await deteleImageMarker(marker.urlImage);
-      }
-      await db.from('marker').delete().eq('uid', marker.uid);
+      await _remoteDataSource.deleteMarker(marker.id);
     } catch (e) {
-      print('Error: $e');
+      debugPrint('Error deleting marker: $e');
+      rethrow;
     }
   }
 
   @override
-  Future<bool> createImageMarker(String url) async {
-    final File imageFile = File(url);
-    String shortFileURL = '';
-    if (url.contains('file_picker/')) {
-      shortFileURL = url.split('file_picker/').last;
+  Future<bool> createImageMarker(String localPath, String storagePath) async {
+    final File imageFile = File(localPath);
+
+    if (!await imageFile.exists()) {
+      debugPrint('Error: Image file does not exist at $localPath');
+      return false;
     }
-    if (url.contains('cache/')) {
-      shortFileURL = url.split('cache/').last;
-    }
-    print('url: $url');
-    print('short url: $shortFileURL');
+
+    debugPrint('Uploading image from: $localPath');
+    debugPrint('Storage path: $storagePath');
+
     try {
-      await db.storage.from('bamboo_images').upload(shortFileURL, imageFile);
+      await db.storage.from('bamboo_images').upload(storagePath, imageFile);
       return true;
     } catch (e) {
-      print('Error: $e');
+      debugPrint('Error uploading image: $e');
       return false;
     }
   }
 
   @override
-  Future<bool> updateImageMarker(String url, String oldUrl) async {
-    final File imageFile = File(url);
-    String shortImageURL = '';
-    if (url.contains('file_picker/')) {
-      shortImageURL = url.split('file_picker/').last;
-    }
-    if (url.contains('cache/')) {
-      shortImageURL = url.split('cache/').last;
+  Future<bool> updateImageMarker(String localPath, String storagePath, String oldImageUrl) async {
+    final File imageFile = File(localPath);
+
+    if (!await imageFile.exists()) {
+      debugPrint('Error: Image file does not exist at $localPath');
+      return false;
     }
 
-    try {
-      final String relativePath = oldUrl.split('bamboo_images/').last;
-      await db.storage.from('bamboo_images').remove([relativePath]);
-    } catch (e) {
-      print('Error: $e');
+    // Delete old image if exists
+    if (oldImageUrl.isNotEmpty && oldImageUrl.contains('bamboo_images/')) {
+      try {
+        final String relativePath = oldImageUrl.split('bamboo_images/').last;
+        await db.storage.from('bamboo_images').remove([relativePath]);
+      } catch (e) {
+        debugPrint('Error deleting old image: $e');
+        // Continue with upload even if delete fails
+      }
     }
+
+    // Upload new image
     try {
       await db.storage.from('bamboo_images').upload(
-            shortImageURL,
+            storagePath,
             imageFile,
             fileOptions: const FileOptions(upsert: true),
           );
       return true;
     } catch (e) {
-      print('Error: $e');
+      debugPrint('Error uploading image: $e');
       return false;
     }
   }
@@ -181,7 +174,7 @@ class InfrastructureMarker implements RepositoryPolygon {
     try {
       await db.storage.from('bamboo_images').remove([relativePath]);
     } catch (e) {
-      print('Error: $e');
+      debugPrint('Error deleting image: $e');
     }
   }
 
@@ -191,9 +184,9 @@ class InfrastructureMarker implements RepositoryPolygon {
       final res = await db.storage.from('bamboo_images').remove([
         'https://gysbnohwkzlxhlqcfhwn.supabase.co/storage/v1/object/public/bamboo_images/1735372142085/IMG-20241228-WA0044.jpg'
       ]);
-      print('Response: $res');
+      debugPrint('Response: $res');
     } catch (e) {
-      print('Error: $e');
+      debugPrint('Error: $e');
     }
   }
 }

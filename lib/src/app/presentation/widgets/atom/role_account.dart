@@ -36,7 +36,7 @@ class _RoleAccountState extends State<RoleAccount> {
               boxShadow: [
                 BoxShadow(
                   color:
-                      Theme.of(context).colorScheme.secondary.withOpacity(0.5),
+                      Theme.of(context).colorScheme.secondary.withValues(alpha: 0.5),
                   spreadRadius: 1,
                   blurRadius: 5,
                   offset: const Offset(0, 3),
@@ -68,7 +68,7 @@ class _RoleAccountState extends State<RoleAccount> {
               boxShadow: [
                 BoxShadow(
                   color:
-                      Theme.of(context).colorScheme.secondary.withOpacity(0.5),
+                      Theme.of(context).colorScheme.secondary.withValues(alpha: 0.5),
                   spreadRadius: 1,
                   blurRadius: 5,
                   offset: const Offset(3, 0),

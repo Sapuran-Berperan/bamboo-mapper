@@ -2,29 +2,36 @@ import 'package:bamboo_app/src/domain/entities/e_marker.dart';
 import 'package:bamboo_app/src/domain/infrastructure/i_marker.dart';
 
 class ServiceMarker {
-  Future<Set<EntitiesMarker>> fetchListMarker(String uid) async {
-    final res = await InfrastructureMarker().readListMarker(uid);
-    return res.where((e) => e != null).map((e) => e!).toSet();
+  final _infrastructure = InfrastructureMarker();
+
+  /// Fetch all markers (no user ID needed, backend uses JWT)
+  Future<Set<EntitiesMarker>> fetchListMarker() async {
+    final res = await _infrastructure.readListMarker();
+    return res.toSet();
   }
 
-  Future<EntitiesMarker> fetchMarker(String uidMarker) async {
-    final res = await InfrastructureMarker().readMarker(uidMarker);
-    return res!;
+  /// Fetch single marker with full details
+  Future<EntitiesMarker> fetchMarker(String markerId) async {
+    final res = await _infrastructure.readMarker(markerId);
+    if (res == null) {
+      throw Exception('Marker tidak ditemukan');
+    }
+    return res;
   }
 
   Future<void> addMarker(EntitiesMarker marker) async {
-    await InfrastructureMarker().createMarker(marker);
+    await _infrastructure.createMarker(marker);
   }
 
-  Future<void> updateMarker(EntitiesMarker marker) async {
-    await InfrastructureMarker().updateMarker(marker);
+  Future<void> updateMarker(EntitiesMarker marker, {bool keepExistingImage = false}) async {
+    await _infrastructure.updateMarker(marker, keepExistingImage: keepExistingImage);
   }
 
   Future<void> deleteMarker(EntitiesMarker marker) async {
-    await InfrastructureMarker().deleteMarker(marker);
+    await _infrastructure.deleteMarker(marker);
   }
 
   Future<void> testDeleteImageMarker() async {
-    await InfrastructureMarker().testDeleteImageMarker();
+    await _infrastructure.testDeleteImageMarker();
   }
 }

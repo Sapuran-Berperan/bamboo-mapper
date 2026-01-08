@@ -4,24 +4,42 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 abstract class UserLoggedEvent {}
 
-class ToggleUserLoggedInEvent extends UserLoggedEvent {
+class UserLoggedInEvent extends UserLoggedEvent {
   final EntitiesUser user;
 
-  ToggleUserLoggedInEvent({required this.user});
+  UserLoggedInEvent({required this.user});
 }
 
-class UserLoggedState {
-  bool isLogged;
-  EntitiesUser user;
+class UserLoggedOutEvent extends UserLoggedEvent {}
 
-  UserLoggedState({required this.isLogged, required this.user});
+class UserLoggedState {
+  final bool isLogged;
+  final EntitiesUser user;
+
+  const UserLoggedState({required this.isLogged, required this.user});
+
+  UserLoggedState copyWith({
+    bool? isLogged,
+    EntitiesUser? user,
+  }) {
+    return UserLoggedState(
+      isLogged: isLogged ?? this.isLogged,
+      user: user ?? this.user,
+    );
+  }
 }
 
 class UserLoggedStateBloc extends Bloc<UserLoggedEvent, UserLoggedState> {
   UserLoggedStateBloc()
       : super(UserLoggedState(isLogged: false, user: defaultUser)) {
-    on<ToggleUserLoggedInEvent>((event, emit) {
-      emit(UserLoggedState(isLogged: !state.isLogged, user: event.user));
+    on<UserLoggedInEvent>((event, emit) {
+      defaultUser = event.user;
+      emit(UserLoggedState(isLogged: true, user: event.user));
+    });
+
+    on<UserLoggedOutEvent>((event, emit) {
+      defaultUser = EntitiesUser(id: '', email: '', name: '');
+      emit(UserLoggedState(isLogged: false, user: defaultUser));
     });
   }
 }

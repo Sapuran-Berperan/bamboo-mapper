@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class DeleteButton extends StatelessWidget {
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   const DeleteButton({super.key, required this.onTap});
 
   @override
@@ -10,7 +10,7 @@ class DeleteButton extends StatelessWidget {
       width: 50,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.red,
+          backgroundColor: onTap == null ? Colors.grey : Colors.red,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
