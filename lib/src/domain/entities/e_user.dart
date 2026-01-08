@@ -1,45 +1,61 @@
 class EntitiesUser {
-  final String uid;
+  final String id;
   final String name;
   final String email;
-  final String password;
+  final String role;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   EntitiesUser({
-    required this.uid,
+    required this.id,
     required this.name,
     required this.email,
-    required this.password,
+    this.role = 'user',
+    this.createdAt,
+    this.updatedAt,
   });
 
   EntitiesUser copyWith({
-    String? uid,
+    String? id,
     String? name,
     String? email,
-    String? password,
+    String? role,
+    DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
     return EntitiesUser(
-      uid: uid ?? this.uid,
+      id: id ?? this.id,
       name: name ?? this.name,
       email: email ?? this.email,
-      password: password ?? this.password,
+      role: role ?? this.role,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
   factory EntitiesUser.fromJSON(Map<String, dynamic> map) {
     return EntitiesUser(
-      uid: map['uid'],
-      name: map['name'],
-      email: map['email'],
-      password: map['password'],
+      id: map['id'] as String,
+      name: map['name'] as String,
+      email: map['email'] as String,
+      role: (map['role'] as String?) ?? 'user',
+      createdAt: map['created_at'] != null
+          ? DateTime.parse(map['created_at'] as String)
+          : null,
+      updatedAt: map['updated_at'] != null
+          ? DateTime.parse(map['updated_at'] as String)
+          : null,
     );
   }
 
   Map<String, dynamic> toJSON() {
     return {
-      'uid': uid,
+      'id': id,
       'name': name,
       'email': email,
-      'password': password,
+      'role': role,
+      'created_at': createdAt?.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
     };
   }
 }

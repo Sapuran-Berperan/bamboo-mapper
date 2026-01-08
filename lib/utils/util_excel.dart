@@ -42,12 +42,12 @@ class UtilExcel {
       sheet.appendRow([
         IntCellValue(i + 1),
         TextCellValue(itemsList[i]!.name),
-        IntCellValue(itemsList[i]!.qty),
+        IntCellValue(itemsList[i]!.quantity),
         TextCellValue(itemsList[i]!.strain),
         TextCellValue(itemsList[i]!.description),
         TextCellValue(itemsList[i]!.ownerName),
         TextCellValue(itemsList[i]!.ownerContact),
-        TextCellValue(itemsList[i]!.urlImage),
+        TextCellValue(itemsList[i]!.imageUrl),
       ]);
     }
   }

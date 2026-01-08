@@ -6,12 +6,12 @@ import 'package:bamboo_app/src/app/presentation/widgets/atom/delete_button.dart'
 import 'package:bamboo_app/src/app/presentation/widgets/atom/header_auth.dart';
 import 'package:bamboo_app/src/app/presentation/widgets/atom/image_uploader.dart';
 import 'package:bamboo_app/src/app/presentation/widgets/atom/modal_snackbar.dart';
+import 'package:bamboo_app/src/app/presentation/widgets/molecule/location_picker.dart';
 import 'package:bamboo_app/src/app/presentation/widgets/atom/submit_button.dart';
 import 'package:bamboo_app/src/app/routes/routes.dart';
 import 'package:bamboo_app/src/app/use_cases/gps_controller.dart';
 import 'package:bamboo_app/src/domain/entities/e_marker.dart';
 import 'package:bamboo_app/src/domain/service/s_marker.dart';
-import 'package:bamboo_app/utils/default_user.dart';
 import 'package:bamboo_app/utils/textfield_validator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -20,10 +20,10 @@ import 'package:latlong2/latlong.dart';
 
 class ModalBottomSheet extends StatefulWidget {
   final BuildContext parentContext;
-  final String? uidMarker;
+  final String? markerId;
 
   const ModalBottomSheet(
-      {super.key, required this.parentContext, this.uidMarker});
+      {super.key, required this.parentContext, this.markerId});
 
   @override
   State<ModalBottomSheet> createState() => _ModalBottomSheetState();
@@ -48,19 +48,19 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
   bool _waitingForResponse = false;
   String? _pendingOperation;
 
-  bool get _isEditMode => widget.uidMarker != null;
+  bool get _isEditMode => widget.markerId != null;
 
   @override
   void initState() {
     super.initState();
     if (_isEditMode) {
-      _markerFuture = ServiceMarker().fetchMarker(widget.uidMarker!);
+      _markerFuture = ServiceMarker().fetchMarker(widget.markerId!);
       _markerFuture!.then((marker) {
         if (mounted) {
           setState(() {
             _nameController.text = marker.name;
             _descriptionController.text = marker.description;
-            _qtyController.text = marker.qty.toString();
+            _qtyController.text = marker.quantity.toString();
             _strainController.text = marker.strain;
             _ownerNameController.text = marker.ownerName;
             _ownerContactController.text = marker.ownerContact;
@@ -127,20 +127,19 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
     }
   }
 
-  // Validate required fields
+  // Validate required fields (name, latitude, longitude per API docs)
   bool _validateForm() {
     if (_nameController.text.trim().isEmpty) {
       ModalSnackbar(context).showError('Nama lokasi harus diisi');
       return false;
     }
-    if (_qtyController.text.trim().isEmpty) {
-      ModalSnackbar(context).showError('Jumlah harus diisi');
-      return false;
-    }
-    final qty = int.tryParse(_qtyController.text);
-    if (qty == null || qty < 0) {
-      ModalSnackbar(context).showError('Jumlah harus berupa angka valid');
-      return false;
+    // Quantity is optional, but if provided must be valid
+    if (_qtyController.text.trim().isNotEmpty) {
+      final qty = int.tryParse(_qtyController.text);
+      if (qty == null || qty < 0) {
+        ModalSnackbar(context).showError('Jumlah harus berupa angka valid');
+        return false;
+      }
     }
     return true;
   }
@@ -191,22 +190,24 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
 
       setState(() => _waitingForResponse = true);
 
+      final now = DateTime.now();
       if (!_isEditMode) {
         markerBloc.add(
           AddMarkerData(
             marker: EntitiesMarker(
-              uid: '',
-              uidCreator: defaultUser.uid,
-              uidUser: [defaultUser.uid],
+              id: '',
+              shortCode: '',
+              creatorId: '',
               name: _nameController.text.trim(),
               description: _descriptionController.text.trim(),
               strain: _strainController.text.trim(),
-              qty: int.tryParse(_qtyController.text) ?? 0,
-              urlImage: _image?.path ?? '',
+              quantity: int.tryParse(_qtyController.text) ?? 0,
+              imageUrl: _image?.path ?? '',
               ownerName: _ownerNameController.text.trim(),
               ownerContact: _ownerContactController.text.trim(),
               location: _getLocation(currentPosition),
-              createdAt: DateTime.now(),
+              createdAt: now,
+              updatedAt: now,
             ),
           ),
         );
@@ -214,18 +215,19 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
         markerBloc.add(
           UpdateMarkerData(
             marker: EntitiesMarker(
-              uid: marker!.uid,
-              uidCreator: marker.uidCreator,
-              uidUser: marker.uidUser,
+              id: marker!.id,
+              shortCode: marker.shortCode,
+              creatorId: marker.creatorId,
               name: _nameController.text.trim(),
               description: _descriptionController.text.trim(),
               strain: _strainController.text.trim(),
-              qty: int.tryParse(_qtyController.text) ?? marker.qty,
-              urlImage: _image == null ? 'NULL:${marker.urlImage}' : _image!.path,
+              quantity: int.tryParse(_qtyController.text) ?? marker.quantity,
+              imageUrl: _image == null ? 'NULL:${marker.imageUrl}' : _image!.path,
               ownerName: _ownerNameController.text.trim(),
               ownerContact: _ownerContactController.text.trim(),
               location: _getLocation(currentPosition),
               createdAt: marker.createdAt,
+              updatedAt: now,
             ),
           ),
         );
@@ -430,9 +432,9 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
                   flex: 1,
                   child: AuthTextField(
                     controller: _qtyController,
-                    hintText: 'Jumlah *',
+                    hintText: 'Jumlah',
                     label: 'Jumlah',
-                    validator: TextfieldValidator.name,
+                    optional: true,
                     type: TextInputType.number,
                   ),
                 ),
@@ -461,31 +463,10 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
               type: TextInputType.phone,
             ),
             SizedBox(height: 0.012.sh),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Flexible(
-                  flex: 1,
-                  child: AuthTextField(
-                    controller: _latitudeController,
-                    hintText: 'Latitude',
-                    label: 'Latitude',
-                    optional: true,
-                    type: const TextInputType.numberWithOptions(decimal: true, signed: true),
-                  ),
-                ),
-                Padding(padding: EdgeInsets.only(left: 0.02.sw)),
-                Flexible(
-                  flex: 1,
-                  child: AuthTextField(
-                    controller: _longitudeController,
-                    hintText: 'Longitude',
-                    label: 'Longitude',
-                    optional: true,
-                    type: const TextInputType.numberWithOptions(decimal: true, signed: true),
-                  ),
-                ),
-              ],
+            LocationPicker(
+              latitudeController: _latitudeController,
+              longitudeController: _longitudeController,
+              enabled: !_isSubmitting,
             ),
             SizedBox(height: 0.012.sh),
             ImageUploader(onImageSelected: _onImageChanged),

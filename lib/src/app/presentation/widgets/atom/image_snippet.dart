@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class ImageSnippet extends StatelessWidget {
-  final String urlImage;
-  const ImageSnippet({super.key, required this.urlImage});
+  final String imageUrl;
+  const ImageSnippet({super.key, required this.imageUrl});
 
   @override
   Widget build(BuildContext context) {
@@ -15,7 +15,7 @@ class ImageSnippet extends StatelessWidget {
             height: 0.8.sh,
             width: 0.8.sw,
             child: Image.network(
-              urlImage,
+              imageUrl,
               fit: BoxFit.cover,
             ),
           ),
@@ -24,9 +24,9 @@ class ImageSnippet extends StatelessWidget {
       child: SizedBox(
         width: 0.55.sw,
         height: 0.31.sw,
-        child: urlImage.isNotEmpty
+        child: imageUrl.isNotEmpty
             ? Image.network(
-                urlImage,
+                imageUrl,
                 fit: BoxFit.cover,
                 loadingBuilder: (BuildContext context, Widget child,
                     ImageChunkEvent? loadingProgress) {
