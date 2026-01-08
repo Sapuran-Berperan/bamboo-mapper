@@ -1,0 +1,69 @@
+name: Build & Release APK
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      release_name:
+        description: 'Release name (optional)'
+        required: false
+        default: ''
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Create .env file
+        run: |
+          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" >> assets/.env
+          echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> assets/.env
+          echo "API_BASE_URL=${{ secrets.API_BASE_URL }}" >> assets/.env
+
+      - name: Set Google Maps API Key
+        run: |
+          echo "GOOGLE_MAPS_API_KEY=${{ secrets.GOOGLE_MAPS_API_KEY }}" >> android/local.properties
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build APK
+        run: flutter build apk --release
+
+      - name: Rename APK
+        run: |
+          VERSION=${GITHUB_REF_NAME:-manual}
+          mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/bamboo-mapper-${VERSION}.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apk
+          path: build/app/outputs/flutter-apk/bamboo-mapper-*.apk
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/app/outputs/flutter-apk/bamboo-mapper-*.apk
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
