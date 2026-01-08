@@ -10,9 +10,23 @@ import 'api_response.dart';
 class AuthInterceptor extends Interceptor {
   AuthInterceptor({
     required Dio dio,
-  }) : _dio = dio;
+  }) : _dio = dio {
+    // Create a clean Dio instance for refresh requests
+    // - No Authorization header (avoids sending expired token)
+    // - No AuthInterceptor (avoids recursion issues)
+    _refreshDio = Dio(BaseOptions(
+      baseUrl: dio.options.baseUrl,
+      connectTimeout: dio.options.connectTimeout,
+      receiveTimeout: dio.options.receiveTimeout,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+    ));
+  }
 
   final Dio _dio;
+  late final Dio _refreshDio;
   bool _isRefreshing = false;
 
   @override
@@ -74,7 +88,8 @@ class AuthInterceptor extends Interceptor {
   }
 
   Future<RefreshResponse> _refreshToken(String refreshToken) async {
-    final response = await _dio.post<Map<String, dynamic>>(
+    // Use _refreshDio instead of _dio to avoid sending expired access token
+    final response = await _refreshDio.post<Map<String, dynamic>>(
       '/auth/refresh',
       data: RefreshRequest(refreshToken: refreshToken).toJson(),
     );
