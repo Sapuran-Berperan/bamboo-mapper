@@ -31,11 +31,19 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _handleLogin(String email, String password) async {
     setState(() => _isLoading = true);
     try {
-      final res = await const AuthController().signIn(email, password);
+      final userBloc = context.read<UserLoggedStateBloc>();
+      final result = await AuthController(userBloc: userBloc).signIn(
+        email.trim(),
+        password,
+      );
       if (mounted) {
-        res
-            ? ModalSnackbar(context).showSuccess('Login Berhasil')
-            : ModalSnackbar(context).showError('Email atau password salah');
+        if (result.success) {
+          ModalSnackbar(context).showSuccess('Login Berhasil');
+        } else {
+          ModalSnackbar(context).showError(
+            result.errorMessage ?? 'Email atau password salah',
+          );
+        }
       }
     } finally {
       if (mounted) {

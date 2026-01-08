@@ -36,7 +36,8 @@ class MarkerController {
                     child: BlocProvider.value(
                       value: markerStateBloc,
                       child: CustomInfoWindow(
-                        marker: data,
+                        markerId: data.id,
+                        markerName: data.name,
                         markerStateBloc: markerStateBloc,
                       ),
                     ),

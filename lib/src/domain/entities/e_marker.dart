@@ -1,100 +1,128 @@
 import 'package:latlong2/latlong.dart';
 
+import 'package:bamboo_app/src/data/models/marker/marker_list_response.dart';
+import 'package:bamboo_app/src/data/models/marker/marker_response.dart';
+
 class EntitiesMarker {
-  final String uid;
-  final String uidCreator;
-  final List<String> uidUser;
+  final String id;
+  final String shortCode;
+  final String creatorId;
   final String name;
   final String description;
   final String strain;
-  final int qty;
-  final String urlImage;
+  final int quantity;
+  final String imageUrl;
   final String ownerName;
   final String ownerContact;
   final LatLng location;
   final DateTime createdAt;
+  final DateTime updatedAt;
 
   EntitiesMarker({
-    required this.uid,
-    required this.uidCreator,
-    required this.uidUser,
+    required this.id,
+    required this.shortCode,
+    required this.creatorId,
     required this.name,
     required this.description,
     required this.strain,
-    required this.qty,
-    required this.urlImage,
+    required this.quantity,
+    required this.imageUrl,
     required this.ownerName,
     required this.ownerContact,
     required this.location,
     required this.createdAt,
+    required this.updatedAt,
   });
 
   EntitiesMarker copyWith({
-    String? uid,
-    String? uidCreator,
-    List<String>? uidUser,
+    String? id,
+    String? shortCode,
+    String? creatorId,
     String? name,
     String? description,
     String? strain,
-    int? qty,
-    String? urlImage,
+    int? quantity,
+    String? imageUrl,
     String? ownerName,
     String? ownerContact,
     LatLng? location,
     DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
     return EntitiesMarker(
-      uid: uid ?? this.uid,
-      uidCreator: uidCreator ?? this.uidCreator,
-      uidUser: uidUser ?? this.uidUser,
+      id: id ?? this.id,
+      shortCode: shortCode ?? this.shortCode,
+      creatorId: creatorId ?? this.creatorId,
       name: name ?? this.name,
       description: description ?? this.description,
       strain: strain ?? this.strain,
-      qty: qty ?? this.qty,
-      urlImage: urlImage ?? this.urlImage,
+      quantity: quantity ?? this.quantity,
+      imageUrl: imageUrl ?? this.imageUrl,
       ownerName: ownerName ?? this.ownerName,
       ownerContact: ownerContact ?? this.ownerContact,
       location: location ?? this.location,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
-  factory EntitiesMarker.fromJSON(Map<String, dynamic> json) {
+  /// Create entity from full marker response (GET /markers/{id})
+  factory EntitiesMarker.fromResponse(MarkerResponse response) {
     return EntitiesMarker(
-      uid: json['uid'],
-      uidCreator: json['uidCreator'],
-      uidUser: List<String>.from(json['uidUser']),
-      name: json['name'],
-      description: json['description'],
-      strain: json['strain'],
-      qty: json['qty'],
-      urlImage: json['urlImage'],
-      ownerName: json['ownerName'],
-      ownerContact: json['ownerContact'],
-      location: json['location'].toString().split(',').length == 2
-          ? LatLng(
-              double.parse(json['location'].toString().split(',')[0]),
-              double.parse(json['location'].toString().split(',')[1]),
-            )
-          : const LatLng(0, 0),
-      createdAt: DateTime.parse(json['createdAt']),
+      id: response.id,
+      shortCode: response.shortCode,
+      creatorId: response.creatorId,
+      name: response.name,
+      description: response.description ?? '',
+      strain: response.strain ?? '',
+      quantity: response.quantity ?? 0,
+      imageUrl: response.imageUrl ?? '',
+      ownerName: response.ownerName ?? '',
+      ownerContact: response.ownerContact ?? '',
+      location: LatLng(
+        double.tryParse(response.latitude) ?? 0,
+        double.tryParse(response.longitude) ?? 0,
+      ),
+      createdAt: response.createdAt,
+      updatedAt: response.updatedAt,
     );
   }
 
-  Map<String, dynamic> toJSON() {
+  /// Create lightweight entity from list response (GET /markers/)
+  /// This only has basic info for map display
+  factory EntitiesMarker.fromListResponse(MarkerListResponse response) {
+    final now = DateTime.now();
+    return EntitiesMarker(
+      id: response.id,
+      shortCode: response.shortCode,
+      creatorId: '',
+      name: response.name,
+      description: '',
+      strain: '',
+      quantity: 0,
+      imageUrl: '',
+      ownerName: '',
+      ownerContact: '',
+      location: LatLng(
+        double.tryParse(response.latitude) ?? 0,
+        double.tryParse(response.longitude) ?? 0,
+      ),
+      createdAt: now,
+      updatedAt: now,
+    );
+  }
+
+  /// Convert to JSON for API requests (create/update)
+  Map<String, dynamic> toJson() {
     return {
-      'uid': uid,
-      'uidCreator': uidCreator,
-      'uidUser': uidUser,
       'name': name,
       'description': description,
       'strain': strain,
-      'qty': qty,
-      'urlImage': urlImage,
-      'ownerName': ownerName,
-      'ownerContact': ownerContact,
-      'location': '${location.latitude},${location.longitude}',
-      'createdAt': createdAt.toIso8601String(),
+      'quantity': quantity,
+      'latitude': location.latitude.toString(),
+      'longitude': location.longitude.toString(),
+      'owner_name': ownerName,
+      'owner_contact': ownerContact,
     };
   }
 }
