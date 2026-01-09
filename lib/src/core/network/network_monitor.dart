@@ -30,7 +30,7 @@ class NetworkMonitor {
   NetworkStatus _currentStatus = NetworkStatus.offline;
 
   /// Subscription to connectivity changes
-  StreamSubscription<List<ConnectivityResult>>? _subscription;
+  StreamSubscription<ConnectivityResult>? _subscription;
 
   /// Whether the monitor has been initialized
   bool _initialized = false;
@@ -64,7 +64,7 @@ class NetworkMonitor {
 
     // Listen for changes
     _subscription = _connectivity.onConnectivityChanged.listen(
-      (results) => _handleConnectivityChange(results),
+      (result) => _handleConnectivityChange(result),
     );
 
     _initialized = true;
@@ -88,8 +88,8 @@ class NetworkMonitor {
   /// Update status from connectivity check
   Future<void> _updateStatus() async {
     try {
-      final results = await _connectivity.checkConnectivity();
-      _handleConnectivityChange(results);
+      final result = await _connectivity.checkConnectivity();
+      _handleConnectivityChange(result);
     } catch (e) {
       debugPrint('[NetworkMonitor] Error checking connectivity: $e');
       _setStatus(NetworkStatus.offline);
@@ -97,36 +97,29 @@ class NetworkMonitor {
   }
 
   /// Handle connectivity change event
-  void _handleConnectivityChange(List<ConnectivityResult> results) {
-    NetworkStatus newStatus = NetworkStatus.offline;
+  void _handleConnectivityChange(ConnectivityResult result) {
+    NetworkStatus newStatus;
 
-    for (final result in results) {
-      switch (result) {
-        case ConnectivityResult.wifi:
-          newStatus = NetworkStatus.wifi;
-          break;
-        case ConnectivityResult.mobile:
-          // Only set to mobile if not already wifi
-          if (newStatus != NetworkStatus.wifi) {
-            newStatus = NetworkStatus.mobile;
-          }
-          break;
-        case ConnectivityResult.ethernet:
-          // Treat ethernet as wifi
-          newStatus = NetworkStatus.wifi;
-          break;
-        case ConnectivityResult.vpn:
-          // VPN can be wifi or mobile, treat as wifi
-          if (newStatus != NetworkStatus.wifi) {
-            newStatus = NetworkStatus.wifi;
-          }
-          break;
-        case ConnectivityResult.bluetooth:
-        case ConnectivityResult.none:
-        case ConnectivityResult.other:
-          // Keep as offline unless another connection is available
-          break;
-      }
+    switch (result) {
+      case ConnectivityResult.wifi:
+        newStatus = NetworkStatus.wifi;
+        break;
+      case ConnectivityResult.mobile:
+        newStatus = NetworkStatus.mobile;
+        break;
+      case ConnectivityResult.ethernet:
+        // Treat ethernet as wifi
+        newStatus = NetworkStatus.wifi;
+        break;
+      case ConnectivityResult.vpn:
+        // VPN can be wifi or mobile, treat as wifi
+        newStatus = NetworkStatus.wifi;
+        break;
+      case ConnectivityResult.bluetooth:
+      case ConnectivityResult.none:
+      case ConnectivityResult.other:
+        newStatus = NetworkStatus.offline;
+        break;
     }
 
     _setStatus(newStatus);
