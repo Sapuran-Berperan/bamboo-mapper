@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 
 import '../../core/network/network_monitor.dart';
-import '../../core/sync/sync_service.dart' show SyncService, SyncResult;
+import '../../core/sync/sync_service.dart' show SyncService;
 import '../../data/datasources/marker_local_datasource.dart';
 import '../../data/datasources/marker_remote_datasource.dart';
 import '../entities/e_marker.dart';
@@ -105,11 +105,11 @@ class InfrastructureMarkerOffline implements RepositoryPolygon {
       // If online, sync in background
       if (_networkMonitor.isOnline) {
         // Don't wait for sync, return local data immediately
+        // ignore: unawaited_futures
         _syncService.sync().then((_) {
-          // Sync completed
+          debugPrint('[InfrastructureMarkerOffline] Background sync completed');
         }).catchError((e) {
           debugPrint('[InfrastructureMarkerOffline] Background sync error: $e');
-          return SyncResult(success: false, error: e.toString());
         });
       }
 
