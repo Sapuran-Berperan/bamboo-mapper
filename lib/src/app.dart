@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:bamboo_app/src/app/routes/routes.dart';
 import 'package:bamboo_app/src/app/blocs/theme_state.dart';
 import 'package:bamboo_app/src/app/blocs/user_logged_state.dart';
+import 'package:bamboo_app/src/app/blocs/sync_state.dart';
 import 'package:bamboo_app/src/app/presentation/themes/ui_mode.dart';
 
 class MyApp extends StatelessWidget {
@@ -17,6 +18,9 @@ class MyApp extends StatelessWidget {
         providers: [
           BlocProvider(create: (context) => ThemeStateBloc()),
           BlocProvider(create: (context) => UserLoggedStateBloc()),
+          BlocProvider(
+            create: (context) => SyncBloc()..add(SyncInitialize()),
+          ),
         ],
         child: BlocBuilder<ThemeStateBloc, ThemeState>(
           builder: (context, state) {

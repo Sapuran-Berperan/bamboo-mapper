@@ -3,7 +3,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
 import 'src/app.dart';
 import 'src/core/network/api_client.dart';
+import 'src/core/network/network_monitor.dart';
 import 'src/core/storage/token_storage.dart';
+import 'src/core/database/app_database.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,6 +22,12 @@ void main() async {
   if (accessToken != null) {
     ApiClient.instance.setAuthToken(accessToken);
   }
+
+  // Initialize offline services
+  await NetworkMonitor.instance.initialize();
+
+  // Initialize database (lazy initialization)
+  AppDatabase();
 
   runApp(const MyApp());
 }
