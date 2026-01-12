@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
+import '../../app/routes/routes.dart';
 import '../../data/models/auth/refresh_request.dart';
 import '../../data/models/auth/refresh_response.dart';
 import '../storage/token_storage.dart';
@@ -155,6 +156,11 @@ class AuthInterceptor extends Interceptor {
   ) async {
     await TokenStorage.instance.clearTokens();
     _dio.options.headers.remove('Authorization');
+
+    // Navigate to login page when session is invalid
+    debugPrint('AuthInterceptor: Session expired, redirecting to login');
+    router.go('/login');
+
     handler.reject(err);
   }
 }
