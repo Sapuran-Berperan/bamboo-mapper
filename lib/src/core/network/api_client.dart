@@ -110,7 +110,20 @@ class ApiClient {
       final response = await _dio.post<Map<String, dynamic>>(
         path,
         data: formData,
-        options: Options(contentType: 'multipart/form-data'),
+        options: Options(
+          contentType: 'multipart/form-data',
+          headers: {
+            if (_dio.options.headers['Authorization'] != null)
+              'Authorization': _dio.options.headers['Authorization'],
+          },
+          // Store metadata for retry in case of token refresh
+          extra: {
+            'isMultipart': true,
+            'fields': fields,
+            'filePath': filePath,
+            'fileFieldName': fileFieldName,
+          },
+        ),
       );
       return _handleResponse(response, fromJson);
     } on DioException catch (e) {
@@ -136,7 +149,20 @@ class ApiClient {
       final response = await _dio.put<Map<String, dynamic>>(
         path,
         data: formData,
-        options: Options(contentType: 'multipart/form-data'),
+        options: Options(
+          contentType: 'multipart/form-data',
+          headers: {
+            if (_dio.options.headers['Authorization'] != null)
+              'Authorization': _dio.options.headers['Authorization'],
+          },
+          // Store metadata for retry in case of token refresh
+          extra: {
+            'isMultipart': true,
+            'fields': fields,
+            'filePath': filePath,
+            'fileFieldName': fileFieldName,
+          },
+        ),
       );
       return _handleResponse(response, fromJson);
     } on DioException catch (e) {
