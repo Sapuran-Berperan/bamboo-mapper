@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
+import '../../app/routes/routes.dart';
 import '../../data/models/auth/refresh_request.dart';
 import '../../data/models/auth/refresh_response.dart';
 import '../storage/token_storage.dart';
@@ -113,18 +114,40 @@ class AuthInterceptor extends Interceptor {
   ) async {
     final options = Options(
       method: requestOptions.method,
+      contentType: requestOptions.contentType,
       headers: {
         ...requestOptions.headers,
         'Authorization': 'Bearer $newAccessToken',
       },
     );
 
+    // Rebuild FormData if the original request was multipart
+    // FormData can only be sent once (stream gets consumed)
+    dynamic data = requestOptions.data;
+    final extra = requestOptions.extra;
+
+    if (extra['isMultipart'] == true) {
+      data = await _rebuildFormData(extra);
+    }
+
     return _dio.request<dynamic>(
       requestOptions.path,
-      data: requestOptions.data,
+      data: data,
       queryParameters: requestOptions.queryParameters,
       options: options,
     );
+  }
+
+  /// Rebuild FormData from stored metadata for retry
+  Future<FormData> _rebuildFormData(Map<String, dynamic> extra) async {
+    final fields = extra['fields'] as Map<String, dynamic>? ?? {};
+    final filePath = extra['filePath'] as String?;
+    final fileFieldName = extra['fileFieldName'] as String? ?? 'image';
+
+    return FormData.fromMap({
+      ...fields,
+      if (filePath != null) fileFieldName: await MultipartFile.fromFile(filePath),
+    });
   }
 
   Future<void> _clearSessionAndReject(
@@ -133,6 +156,11 @@ class AuthInterceptor extends Interceptor {
   ) async {
     await TokenStorage.instance.clearTokens();
     _dio.options.headers.remove('Authorization');
+
+    // Navigate to login page when session is invalid
+    debugPrint('AuthInterceptor: Session expired, redirecting to login');
+    router.go('/login');
+
     handler.reject(err);
   }
 }
