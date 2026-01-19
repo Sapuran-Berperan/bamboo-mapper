@@ -48,6 +48,9 @@ dev_dependencies:
   drift_dev: ^2.15.0
   build_runner: ^2.4.0
 
+dependency_overrides:
+  sqflite_android: 2.4.1
+
 flutter:
   uses-material-design: true
 

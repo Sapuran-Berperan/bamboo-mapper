@@ -1,10 +1,6 @@
-import 'dart:io';
-
 import 'package:drift/drift.dart';
-import 'package:drift/native.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart' as p;
 
+import 'connection/connection.dart';
 import 'tables/local_markers.dart';
 import 'tables/local_users.dart';
 import 'tables/sync_queue.dart';
@@ -19,7 +15,7 @@ class AppDatabase extends _$AppDatabase {
   static AppDatabase? _instance;
 
   /// Private constructor
-  AppDatabase._() : super(_openConnection());
+  AppDatabase._() : super(openConnection());
 
   /// Get singleton instance
   factory AppDatabase() {
@@ -221,13 +217,4 @@ class AppDatabase extends _$AppDatabase {
     await close();
     _instance = null;
   }
-}
-
-/// Opens a connection to the SQLite database
-LazyDatabase _openConnection() {
-  return LazyDatabase(() async {
-    final dbFolder = await getApplicationDocumentsDirectory();
-    final file = File(p.join(dbFolder.path, 'bamboo_mapper.sqlite'));
-    return NativeDatabase.createInBackground(file);
-  });
 }
