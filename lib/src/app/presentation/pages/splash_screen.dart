@@ -5,6 +5,7 @@ import 'package:bamboo_app/src/app/use_cases/auth_controller.dart';
 import 'package:bamboo_app/src/app/use_cases/permission_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class SplashScreenPage extends StatefulWidget {
   const SplashScreenPage({super.key});
@@ -16,6 +17,8 @@ class SplashScreenPage extends StatefulWidget {
 class _SplashScreenPageState extends State<SplashScreenPage> {
   String _status = 'Sedang Meminta Izin...';
   bool _hasError = false;
+  final _storage = const FlutterSecureStorage();
+  static const _onboardingKey = 'onboarding_completed';
 
   @override
   void initState() {
@@ -45,7 +48,19 @@ class _SplashScreenPageState extends State<SplashScreenPage> {
     }
   }
 
+  Future<bool> _hasCompletedOnboarding() async {
+    final value = await _storage.read(key: _onboardingKey);
+    return value == 'true';
+  }
+
   Future<void> _restoreSessionAndNavigate() async {
+    // Check if onboarding has been completed
+    final onboardingCompleted = await _hasCompletedOnboarding();
+    if (!onboardingCompleted) {
+      router.go('/onboarding');
+      return;
+    }
+
     final userBloc = context.read<UserLoggedStateBloc>();
     final authController = AuthController(userBloc: userBloc);
 

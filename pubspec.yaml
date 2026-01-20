@@ -62,3 +62,7 @@ flutter:
     - assets/images/SiMandja-Logo.png
     - assets/images/splash_logo.png
     - assets/images/splash_decoration.png
+    - assets/images/onboarding_1.png
+    - assets/images/onboarding_2.png
+    - assets/images/onboarding_3.png
+    - assets/images/onboarding_4.png

@@ -1,5 +1,6 @@
 import 'package:bamboo_app/src/app/presentation/layout/app_layout.dart';
 import 'package:bamboo_app/src/app/presentation/pages/login.dart';
+import 'package:bamboo_app/src/app/presentation/pages/onboarding.dart';
 import 'package:bamboo_app/src/app/presentation/pages/register.dart';
 import 'package:bamboo_app/src/app/presentation/pages/dashboard.dart';
 import 'package:bamboo_app/src/app/presentation/layout/auth_layout.dart';
@@ -12,9 +13,15 @@ final GoRouter router = GoRouter(
     GoRoute(
       path: '/',
       builder: (BuildContext context, GoRouterState state) {
-        return const AuthLayout(child: SplashScreenPage());
+        return const SplashScreenPage();
       },
       routes: <RouteBase>[
+        GoRoute(
+          path: 'onboarding',
+          builder: (BuildContext context, GoRouterState state) {
+            return const OnboardingPage();
+          },
+        ),
         GoRoute(
           path: 'login',
           builder: (BuildContext context, GoRouterState state) {
