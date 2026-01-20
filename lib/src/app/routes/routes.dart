@@ -38,7 +38,7 @@ final GoRouter router = GoRouter(
         GoRoute(
           path: 'register',
           builder: (BuildContext context, GoRouterState state) {
-            return const AuthLayout(child: RegisterPage());
+            return const RegisterPage();
           },
         ),
         GoRoute(
