@@ -60,3 +60,5 @@ flutter:
     - assets/images/Logo_Sapuran_Berperan.png
     - assets/dark_mode_map.json
     - assets/images/SiMandja-Logo.png
+    - assets/images/splash_logo.png
+    - assets/images/splash_decoration.png

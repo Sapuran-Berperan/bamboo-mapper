@@ -15,6 +15,7 @@ class SplashScreenPage extends StatefulWidget {
 
 class _SplashScreenPageState extends State<SplashScreenPage> {
   String _status = 'Sedang Meminta Izin...';
+  bool _hasError = false;
 
   @override
   void initState() {
@@ -27,6 +28,8 @@ class _SplashScreenPageState extends State<SplashScreenPage> {
   }
 
   Future<void> _initialize() async {
+    setState(() => _hasError = false);
+
     // Request permissions first
     bool pLocation = await PermissionController(callback: permissionCallback)
         .reqLocationPermission();
@@ -37,6 +40,8 @@ class _SplashScreenPageState extends State<SplashScreenPage> {
       // Try to restore session
       setState(() => _status = 'Memuat sesi...');
       await _restoreSessionAndNavigate();
+    } else {
+      setState(() => _hasError = true);
     }
   }
 
@@ -55,21 +60,114 @@ class _SplashScreenPageState extends State<SplashScreenPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            _status,
-            style: TextStyle(
-              fontSize: 24,
-              color: Theme.of(context).textTheme.bodyMedium!.color,
-            ),
-            textAlign: TextAlign.center,
+    return Scaffold(
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment(-0.3, -0.8),
+            end: Alignment(0.5, 0.8),
+            colors: [
+              Color(0xCCFFBF00), // rgba(255, 191, 0, 0.8)
+              Color(0xE662A148), // rgba(98, 161, 72, 0.9)
+            ],
           ),
-          const Padding(padding: EdgeInsets.only(top: 20)),
-          RetryButton(onTap: () async => await _initialize()),
-        ],
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Spacer(flex: 2),
+              // Logo with decoration
+              SizedBox(
+                width: 160,
+                height: 160,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // Decoration behind logo
+                    Positioned(
+                      bottom: 0,
+                      child: Image.asset(
+                        'assets/images/splash_decoration.png',
+                        width: 140,
+                        height: 110,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                    // Main logo
+                    Positioned(
+                      top: 0,
+                      child: Image.asset(
+                        'assets/images/splash_logo.png',
+                        width: 140,
+                        height: 135,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              // Title
+              const Text(
+                'Bamboo Mapper',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 8),
+              // Subtitle
+              const Text(
+                'Lacak Bambu, Di Mana Saja',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+              const Spacer(flex: 2),
+              // Status indicator at bottom
+              Padding(
+                padding: const EdgeInsets.only(bottom: 48),
+                child: Column(
+                  children: [
+                    if (!_hasError) ...[
+                      const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    Text(
+                      _status,
+                      style: const TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white70,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    if (_hasError) ...[
+                      const SizedBox(height: 16),
+                      RetryButton(onTap: () async => await _initialize()),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
