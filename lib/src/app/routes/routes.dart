@@ -5,6 +5,7 @@ import 'package:bamboo_app/src/app/presentation/pages/register.dart';
 import 'package:bamboo_app/src/app/presentation/pages/dashboard.dart';
 import 'package:bamboo_app/src/app/presentation/layout/auth_layout.dart';
 import 'package:bamboo_app/src/app/presentation/pages/splash_screen.dart';
+import 'package:bamboo_app/src/app/presentation/pages/welcome.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -20,6 +21,12 @@ final GoRouter router = GoRouter(
           path: 'onboarding',
           builder: (BuildContext context, GoRouterState state) {
             return const OnboardingPage();
+          },
+        ),
+        GoRoute(
+          path: 'welcome',
+          builder: (BuildContext context, GoRouterState state) {
+            return const WelcomePage();
           },
         ),
         GoRoute(

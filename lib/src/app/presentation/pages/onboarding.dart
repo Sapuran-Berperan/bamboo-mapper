@@ -53,10 +53,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
         curve: Curves.easeInOut,
       );
     } else {
-      // Last page - save completion and navigate to login
+      // Last page - save completion and navigate to welcome
       await _storage.write(key: _onboardingKey, value: 'true');
       if (mounted) {
-        context.go('/login');
+        context.go('/welcome');
       }
     }
   }

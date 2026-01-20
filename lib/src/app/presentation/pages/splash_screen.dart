@@ -69,7 +69,7 @@ class _SplashScreenPageState extends State<SplashScreenPage> {
     if (hasValidSession) {
       router.go('/dashboard');
     } else {
-      router.go('/login');
+      router.go('/welcome');
     }
   }
 
