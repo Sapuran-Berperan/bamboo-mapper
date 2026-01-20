@@ -179,32 +179,6 @@ class _DashboardPageState extends State<DashboardPage> {
                     MarkerLayer(markers: _markers),
                   ],
                 ),
-                // Map type indicator
-                Positioned(
-                  top: 40,
-                  right: 20,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.9),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          _getMapTypeIcon(mapTypeState.currentType),
-                          size: 16,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          mapTypeState.currentInfo.name,
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
                 // Floating buttons (My Location + Add)
                 Positioned(
                   bottom: 20,
@@ -260,19 +234,6 @@ class _DashboardPageState extends State<DashboardPage> {
         );
       },
     );
-  }
-
-  IconData _getMapTypeIcon(MapType type) {
-    switch (type) {
-      case MapType.openStreetMap:
-        return Icons.map;
-      case MapType.satellite:
-        return Icons.satellite_alt;
-      case MapType.terrain:
-        return Icons.terrain;
-      case MapType.dark:
-        return Icons.dark_mode;
-    }
   }
 
   String _getProcessingMessage(MarkerState state) {
