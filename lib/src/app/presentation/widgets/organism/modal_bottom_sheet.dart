@@ -2,20 +2,18 @@ import 'dart:io';
 
 import 'package:bamboo_app/src/app/blocs/marker_state.dart';
 import 'package:bamboo_app/src/app/presentation/widgets/atom/auth_text_field.dart';
-import 'package:bamboo_app/src/app/presentation/widgets/atom/delete_button.dart';
-import 'package:bamboo_app/src/app/presentation/widgets/atom/header_auth.dart';
-import 'package:bamboo_app/src/app/presentation/widgets/atom/image_uploader.dart';
 import 'package:bamboo_app/src/app/presentation/widgets/atom/modal_snackbar.dart';
 import 'package:bamboo_app/src/app/presentation/widgets/molecule/location_picker.dart';
-import 'package:bamboo_app/src/app/presentation/widgets/atom/submit_button.dart';
 import 'package:bamboo_app/src/app/routes/routes.dart';
 import 'package:bamboo_app/src/app/use_cases/gps_controller.dart';
 import 'package:bamboo_app/src/domain/entities/e_marker.dart';
 import 'package:bamboo_app/src/domain/service/s_marker.dart';
 import 'package:bamboo_app/utils/textfield_validator.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 
 class ModalBottomSheet extends StatefulWidget {
@@ -42,7 +40,8 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
   final _longitudeController = TextEditingController();
 
   File? _image;
-  void _onImageChanged(File? image) => _image = image;
+  String? _existingImageUrl;
+  final ImagePicker _picker = ImagePicker();
 
   bool _isSubmitting = false;
   bool _waitingForResponse = false;
@@ -66,6 +65,7 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
             _ownerContactController.text = marker.ownerContact;
             _latitudeController.text = marker.location.latitude.toString();
             _longitudeController.text = marker.location.longitude.toString();
+            _existingImageUrl = marker.imageUrl;
           });
         }
       });
@@ -115,7 +115,6 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
         router.pop();
       } else {
         router.pop();
-        router.pop();
       }
     } else if (state.hasError) {
       setState(() {
@@ -127,13 +126,11 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
     }
   }
 
-  // Validate required fields (name, latitude, longitude per API docs)
   bool _validateForm() {
     if (_nameController.text.trim().isEmpty) {
       ModalSnackbar(context).showError('Nama lokasi harus diisi');
       return false;
     }
-    // Quantity is optional, but if provided must be valid
     if (_qtyController.text.trim().isNotEmpty) {
       final qty = int.tryParse(_qtyController.text);
       if (qty == null || qty < 0) {
@@ -144,27 +141,95 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
     return true;
   }
 
-  // Show delete confirmation dialog
   Future<bool> _showDeleteConfirmation(BuildContext context) async {
     return await showDialog<bool>(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Hapus Data'),
-          content: const Text(
-            'Apakah Anda yakin ingin menghapus data ini? Tindakan ini tidak dapat dibatalkan.',
+      builder: (BuildContext dialogContext) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Batal'),
+          child: Container(
+            constraints: const BoxConstraints(
+              minWidth: 280,
+              maxWidth: 560,
             ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('Hapus'),
+            padding: const EdgeInsets.only(top: 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Title
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Text(
+                    'Hapus Data',
+                    style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 24,
+                      fontWeight: FontWeight.w400,
+                      color: Color(0xFF1D1B20),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Description
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Text(
+                    'Apakah Anda yakin ingin menghapus data ini? Tindakan ini tidak dapat dibatalkan.',
+                    style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                      color: Color(0xFF49454F),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                // Buttons
+                Padding(
+                  padding: const EdgeInsets.only(left: 8, right: 24, bottom: 20),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.of(dialogContext).pop(false),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        ),
+                        child: const Text(
+                          'Batal',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF62A148),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      TextButton(
+                        onPressed: () => Navigator.of(dialogContext).pop(true),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        ),
+                        child: const Text(
+                          'Hapus',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFFF10000),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         );
       },
     ) ?? false;
@@ -172,9 +237,8 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
 
   Future<void> _handleSubmit(EntitiesMarker? marker) async {
     if (!_validateForm()) return;
-    if (_isSubmitting) return; // Prevent double-tap
+    if (_isSubmitting) return;
 
-    // Store BLoC reference before async operation
     final markerBloc = BlocProvider.of<MarkerStateBloc>(widget.parentContext);
 
     setState(() {
@@ -255,9 +319,8 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
   }
 
   Future<void> _handleDelete(EntitiesMarker marker) async {
-    if (_isSubmitting) return; // Prevent double-tap
+    if (_isSubmitting) return;
 
-    // Store BLoC reference before async operation
     final markerBloc = BlocProvider.of<MarkerStateBloc>(widget.parentContext);
 
     final confirmed = await _showDeleteConfirmation(context);
@@ -273,6 +336,35 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
     markerBloc.add(DeleteMarkerData(marker: marker));
   }
 
+  Future<void> _pickImageFromCamera() async {
+    try {
+      final XFile? pickedFile = await _picker.pickImage(
+        source: ImageSource.camera,
+        preferredCameraDevice: CameraDevice.rear,
+      );
+      if (pickedFile != null) {
+        setState(() {
+          _image = File(pickedFile.path);
+        });
+      }
+    } catch (e) {
+      debugPrint('Error capturing image: $e');
+    }
+  }
+
+  Future<void> _pickImageFromGallery() async {
+    try {
+      final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+      if (pickedFile != null) {
+        setState(() {
+          _image = File(pickedFile.path);
+        });
+      }
+    } catch (e) {
+      debugPrint('Error selecting image: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocProvider.value(
@@ -280,235 +372,443 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
       child: BlocConsumer<MarkerStateBloc, MarkerState>(
         listener: _handleStateChange,
         builder: (context, state) {
-          return Stack(
-            children: [
-              FutureBuilder<EntitiesMarker>(
-                future: _markerFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return SizedBox(
-                      height: 0.5.sh,
-                      child: const Center(child: CircularProgressIndicator()),
-                    );
-                  } else if (snapshot.hasError) {
-                    return SizedBox(
-                      height: 0.3.sh,
-                      child: Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                            const SizedBox(height: 16),
-                            const Text('Gagal memuat data'),
-                            const SizedBox(height: 8),
-                            ElevatedButton(
-                              onPressed: () => router.pop(),
-                              child: const Text('Tutup'),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  } else if (snapshot.hasData) {
-                    return _buildContent(context, snapshot.data!);
-                  }
-                  return _buildContent(context, null);
-                },
-              ),
-              if (_isSubmitting)
-                Positioned.fill(
-                  child: Container(
+          return DraggableScrollableSheet(
+            initialChildSize: 0.85,
+            minChildSize: 0.5,
+            maxChildSize: 0.95,
+            expand: false,
+            builder: (context, scrollController) {
+              return Stack(
+                children: [
+                  Container(
                     decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.6),
+                      color: Theme.of(context).scaffoldBackgroundColor,
                       borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(20),
-                        topRight: Radius.circular(20),
+                        topLeft: Radius.circular(16),
+                        topRight: Radius.circular(16),
                       ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.1),
+                          blurRadius: 20,
+                          offset: const Offset(-10, 4),
+                        ),
+                      ],
                     ),
-                    child: Center(
-                      child: Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const CircularProgressIndicator(),
-                              const SizedBox(height: 16),
-                              Text(
-                                _getLoadingMessage(),
-                                style: Theme.of(context).textTheme.bodyMedium,
+                    child: FutureBuilder<EntitiesMarker>(
+                      future: _markerFuture,
+                      builder: (context, snapshot) {
+                        if (_isEditMode && snapshot.connectionState == ConnectionState.waiting) {
+                          return _buildLoadingState(scrollController);
+                        } else if (_isEditMode && snapshot.hasError) {
+                          return _buildErrorState(scrollController, snapshot.error.toString());
+                        } else if (_isEditMode && snapshot.hasData) {
+                          return _buildContent(context, scrollController, snapshot.data!);
+                        }
+                        return _buildContent(context, scrollController, null);
+                      },
+                    ),
+                  ),
+                  if (_isSubmitting)
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.6),
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(16),
+                            topRight: Radius.circular(16),
+                          ),
+                        ),
+                        child: Center(
+                          child: Card(
+                            child: Padding(
+                              padding: const EdgeInsets.all(24),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const CircularProgressIndicator(),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    _getLoadingMessage(),
+                                    style: Theme.of(context).textTheme.bodyMedium,
+                                  ),
+                                ],
                               ),
-                            ],
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ),
-            ],
+                ],
+              );
+            },
           );
         },
       ),
     );
   }
 
-  Widget _buildContent(BuildContext context, EntitiesMarker? marker) {
+  Widget _buildDragHandle() {
+    return Container(
+      width: 42,
+      height: 5,
+      margin: const EdgeInsets.only(top: 8, bottom: 16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFD9D9D9),
+        borderRadius: BorderRadius.circular(8),
+      ),
+    );
+  }
+
+  Widget _buildLoadingState(ScrollController scrollController) {
     return SingleChildScrollView(
-      child: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.primary,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
+      controller: scrollController,
+      child: Column(
+        children: [
+          _buildDragHandle(),
+          SizedBox(height: 0.2.sh),
+          const CircularProgressIndicator(),
+          const SizedBox(height: 16),
+          Text(
+            'Memuat data...',
+            style: Theme.of(context).textTheme.bodyMedium,
           ),
-        ),
-        padding: EdgeInsets.symmetric(vertical: 20, horizontal: 0.1.sw),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              // Drag handle
-              Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: Colors.grey[400],
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              HeaderAuth(
-                heading: _isEditMode ? 'Edit Data' : 'Tambah Data',
-                subheading: _isEditMode
-                    ? 'Perbarui informasi lokasi'
-                    : 'Tambahkan data lokasi baru',
-              ),
-              SizedBox(height: 0.02.sh),
-              _buildTextFields(),
-              SizedBox(height: 0.02.sh),
-              _buildActionButtons(marker),
-              Padding(
-                padding: EdgeInsets.only(
-                  bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-                ),
-              ),
-            ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState(ScrollController scrollController, String error) {
+    return SingleChildScrollView(
+      controller: scrollController,
+      child: Column(
+        children: [
+          _buildDragHandle(),
+          SizedBox(height: 0.1.sh),
+          const Icon(Icons.error_outline, size: 48, color: Colors.red),
+          const SizedBox(height: 16),
+          const Text('Gagal memuat data'),
+          const SizedBox(height: 8),
+          ElevatedButton(
+            onPressed: () => router.pop(),
+            child: const Text('Tutup'),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContent(BuildContext context, ScrollController scrollController, EntitiesMarker? marker) {
+    return SingleChildScrollView(
+      controller: scrollController,
+      child: Form(
+        key: _formKey,
+        child: Column(
+          children: [
+            _buildDragHandle(),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 0.06.sw),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Title
+                  Text(
+                    _isEditMode ? 'Edit Data' : 'Tambah Data',
+                    style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1E1E1E),
+                    ),
+                  ),
+                  SizedBox(height: 0.015.sh),
+
+                  // Location Picker (Lat/Long + buttons)
+                  LocationPicker(
+                    latitudeController: _latitudeController,
+                    longitudeController: _longitudeController,
+                    enabled: !_isSubmitting,
+                  ),
+                  SizedBox(height: 0.015.sh),
+
+                  // Nama Lokasi
+                  AuthTextField(
+                    controller: _nameController,
+                    hintText: 'Nama Lokasi',
+                    label: 'Nama Lokasi',
+                    validator: TextfieldValidator.name,
+                  ),
+                  SizedBox(height: 0.015.sh),
+
+                  // Jenis Bambu & Jumlah
+                  Row(
+                    children: [
+                      Flexible(
+                        flex: 2,
+                        fit: FlexFit.tight,
+                        child: AuthTextField(
+                          controller: _strainController,
+                          hintText: 'Jenis Bambu',
+                          label: 'Jenis Bambu',
+                          optional: true,
+                        ),
+                      ),
+                      SizedBox(width: 0.04.sw),
+                      Flexible(
+                        flex: 1,
+                        child: AuthTextField(
+                          controller: _qtyController,
+                          hintText: 'Jumlah',
+                          label: 'Jumlah',
+                          optional: true,
+                          type: TextInputType.number,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 0.015.sh),
+
+                  // Deskripsi
+                  AuthTextField(
+                    controller: _descriptionController,
+                    hintText: 'Deskripsi',
+                    label: 'Deskripsi',
+                    optional: true,
+                  ),
+                  SizedBox(height: 0.015.sh),
+
+                  // Nama Pemilik
+                  AuthTextField(
+                    controller: _ownerNameController,
+                    hintText: 'Nama Pemilik',
+                    label: 'Nama Pemilik',
+                    optional: true,
+                  ),
+                  SizedBox(height: 0.015.sh),
+
+                  // Nomor Pemilik
+                  AuthTextField(
+                    controller: _ownerContactController,
+                    hintText: 'Nomor Pemilik',
+                    label: 'Nomor Pemilik',
+                    optional: true,
+                    type: TextInputType.phone,
+                  ),
+                  SizedBox(height: 0.015.sh),
+
+                  // Image Upload Section
+                  _buildImageUploadSection(),
+                  SizedBox(height: 0.02.sh),
+
+                  // Action Buttons
+                  _buildActionButtons(marker),
+                  SizedBox(height: MediaQuery.of(context).viewInsets.bottom + 20),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildTextFields() {
-    return IgnorePointer(
-      ignoring: _isSubmitting,
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 200),
-        opacity: _isSubmitting ? 0.5 : 1.0,
-        child: Column(
-          children: [
-            AuthTextField(
-              controller: _nameController,
-              hintText: 'Nama Lokasi *',
-              label: 'Nama Lokasi',
-              validator: TextfieldValidator.name,
-            ),
-            SizedBox(height: 0.012.sh),
-            Row(
-              children: [
-                Flexible(
-                  flex: 2,
-                  fit: FlexFit.tight,
-                  child: AuthTextField(
-                    controller: _strainController,
-                    hintText: 'Jenis Bambu',
-                    label: 'Jenis Bambu',
-                    optional: true,
+  Widget _buildImageUploadSection() {
+    final hasImage = _image != null || (_existingImageUrl != null && _existingImageUrl!.isNotEmpty);
+
+    return GestureDetector(
+      onTap: _showImagePickerOptions,
+      child: Container(
+        width: double.infinity,
+        height: 150,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.secondary,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: const Color(0xFF375DFB).withValues(alpha: 0.3),
+            width: 1,
+          ),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: hasImage
+              ? _buildImagePreview()
+              : Center(
+                  child: Icon(
+                    Icons.camera_alt,
+                    size: 64,
+                    color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
                   ),
                 ),
-                Padding(padding: EdgeInsets.only(left: 0.02.sw)),
-                Flexible(
-                  flex: 1,
-                  child: AuthTextField(
-                    controller: _qtyController,
-                    hintText: 'Jumlah',
-                    label: 'Jumlah',
-                    optional: true,
-                    type: TextInputType.number,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 0.012.sh),
-            AuthTextField(
-              controller: _descriptionController,
-              hintText: 'Deskripsi',
-              label: 'Deskripsi',
-              optional: true,
-            ),
-            SizedBox(height: 0.012.sh),
-            AuthTextField(
-              controller: _ownerNameController,
-              hintText: 'Nama Pemilik',
-              label: 'Nama Pemilik',
-              optional: true,
-            ),
-            SizedBox(height: 0.012.sh),
-            AuthTextField(
-              controller: _ownerContactController,
-              hintText: 'Nomor Pemilik',
-              label: 'Nomor Pemilik',
-              optional: true,
-              type: TextInputType.phone,
-            ),
-            SizedBox(height: 0.012.sh),
-            LocationPicker(
-              latitudeController: _latitudeController,
-              longitudeController: _longitudeController,
-              enabled: !_isSubmitting,
-            ),
-            SizedBox(height: 0.012.sh),
-            ImageUploader(onImageSelected: _onImageChanged),
-          ],
         ),
       ),
+    );
+  }
+
+  Widget _buildImagePreview() {
+    if (_image != null) {
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.file(
+            _image!,
+            fit: BoxFit.cover,
+          ),
+          Positioned(
+            top: 8,
+            right: 8,
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _image = null;
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.5),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.close,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    } else if (_existingImageUrl != null && _existingImageUrl!.isNotEmpty) {
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          CachedNetworkImage(
+            imageUrl: _existingImageUrl!,
+            fit: BoxFit.cover,
+            placeholder: (context, url) => const Center(
+              child: CircularProgressIndicator(),
+            ),
+            errorWidget: (context, url, error) => Center(
+              child: Icon(
+                Icons.camera_alt,
+                size: 64,
+                color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 8,
+            right: 8,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: const Text(
+                'Tap untuk ganti',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+    return const SizedBox();
+  }
+
+  void _showImagePickerOptions() {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Ambil Foto'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImageFromCamera();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Pilih dari Galeri'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImageFromGallery();
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
   Widget _buildActionButtons(EntitiesMarker? marker) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          // Cancel button
-          Expanded(
-            child: OutlinedButton(
-              onPressed: _isSubmitting ? null : () => router.pop(),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12),
+    return Row(
+      children: [
+        // Save button
+        Expanded(
+          flex: _isEditMode ? 3 : 1,
+          child: SizedBox(
+            height: 48,
+            child: ElevatedButton(
+              onPressed: _isSubmitting ? null : () => _handleSubmit(marker),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF62A148),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                elevation: 2,
+                shadowColor: const Color(0xFF253EA7).withValues(alpha: 0.48),
               ),
-              child: const Text('Batal'),
+              child: Text(
+                'Simpan Data',
+                style: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ),
-          const SizedBox(width: 12),
-          // Submit button
-          Expanded(
-            flex: 2,
-            child: SubmitButton(
-              onTap: _isSubmitting ? null : () => _handleSubmit(marker),
-              text: _isEditMode ? 'Simpan Perubahan' : 'Simpan Data',
+        ),
+        // Delete button (only in edit mode)
+        if (_isEditMode) ...[
+          SizedBox(width: 0.06.sw),
+          SizedBox(
+            width: 63,
+            height: 50,
+            child: ElevatedButton(
+              onPressed: _isSubmitting ? null : () => _handleDelete(marker!),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFE40000),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  side: const BorderSide(
+                    color: Color(0xFFF8F7FB),
+                    width: 1,
+                  ),
+                ),
+                padding: EdgeInsets.zero,
+              ),
+              child: const Icon(
+                Icons.delete,
+                color: Colors.white,
+                size: 24,
+              ),
             ),
           ),
-          // Delete button (only in edit mode)
-          if (_isEditMode) ...[
-            const SizedBox(width: 12),
-            DeleteButton(
-              onTap: _isSubmitting ? null : () => _handleDelete(marker!),
-            ),
-          ],
         ],
-      ),
+      ],
     );
   }
 }

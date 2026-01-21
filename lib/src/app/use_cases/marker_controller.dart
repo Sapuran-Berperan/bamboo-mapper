@@ -1,5 +1,5 @@
 import 'package:bamboo_app/src/app/blocs/marker_state.dart';
-import 'package:bamboo_app/src/app/presentation/widgets/atom/custom_info_window.dart';
+import 'package:bamboo_app/src/app/presentation/widgets/organism/marker_view_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -20,37 +20,19 @@ class MarkerController {
           width: 40,
           height: 40,
           child: GestureDetector(
-            onTap: () => showGeneralDialog(
+            onTap: () => showModalBottomSheet(
               context: context,
-              barrierDismissible: true,
-              barrierLabel:
-                  MaterialLocalizations.of(context).modalBarrierDismissLabel,
-              barrierColor: Colors.black54,
-              transitionDuration: const Duration(milliseconds: 200),
-              pageBuilder:
-                  (BuildContext buildContext, Animation a1, Animation a2) {
-                return Align(
-                  alignment: Alignment.center,
-                  child: Material(
-                    borderRadius: BorderRadius.circular(10),
-                    child: BlocProvider.value(
-                      value: markerStateBloc,
-                      child: CustomInfoWindow(
-                        markerId: data.id,
-                        markerName: data.name,
-                        markerStateBloc: markerStateBloc,
-                      ),
-                    ),
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (BuildContext modalContext) {
+                return BlocProvider.value(
+                  value: markerStateBloc,
+                  child: MarkerViewBottomSheet(
+                    parentContext: context,
+                    markerId: data.id,
+                    markerName: data.name,
+                    markerStateBloc: markerStateBloc,
                   ),
-                );
-              },
-              transitionBuilder: (context, animation, secondaryAnimation, child) {
-                return SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0, 1),
-                    end: Offset.zero,
-                  ).animate(animation),
-                  child: child,
                 );
               },
             ),
