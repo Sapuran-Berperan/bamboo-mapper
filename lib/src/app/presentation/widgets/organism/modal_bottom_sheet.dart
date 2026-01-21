@@ -146,6 +146,7 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
       context: context,
       builder: (BuildContext dialogContext) {
         return Dialog(
+          backgroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(28),
           ),
@@ -421,16 +422,22 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
                         ),
                         child: Center(
                           child: Card(
+                            color: Colors.white,
                             child: Padding(
                               padding: const EdgeInsets.all(24),
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const CircularProgressIndicator(),
+                                  const CircularProgressIndicator(
+                                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF62A148)),
+                                  ),
                                   const SizedBox(height: 16),
                                   Text(
                                     _getLoadingMessage(),
-                                    style: Theme.of(context).textTheme.bodyMedium,
+                                    style: const TextStyle(
+                                      color: Color(0xFF1E1E1E),
+                                      fontSize: 14,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -467,7 +474,9 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
         children: [
           _buildDragHandle(),
           SizedBox(height: 0.2.sh),
-          const CircularProgressIndicator(),
+          const CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF62A148)),
+          ),
           const SizedBox(height: 16),
           Text(
             'Memuat data...',
@@ -686,7 +695,9 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
             imageUrl: _existingImageUrl!,
             fit: BoxFit.cover,
             placeholder: (context, url) => const Center(
-              child: CircularProgressIndicator(),
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF62A148)),
+              ),
             ),
             errorWidget: (context, url, error) => Center(
               child: Icon(
@@ -723,6 +734,7 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
   void _showImagePickerOptions() {
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.white,
       builder: (BuildContext context) {
         return SafeArea(
           child: Wrap(

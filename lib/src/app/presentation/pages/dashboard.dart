@@ -118,7 +118,9 @@ class _DashboardPageState extends State<DashboardPage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const CircularProgressIndicator(),
+                    const CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF62A148)),
+                    ),
                     const SizedBox(height: 16),
                     Text(
                       _locationData == null
@@ -216,7 +218,10 @@ class _DashboardPageState extends State<DashboardPage> {
                             const SizedBox(
                               width: 16,
                               height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF62A148)),
+                              ),
                             ),
                             const SizedBox(width: 8),
                             Text(

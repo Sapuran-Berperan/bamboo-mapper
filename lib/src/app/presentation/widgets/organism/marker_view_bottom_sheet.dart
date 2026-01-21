@@ -107,7 +107,11 @@ class _MarkerViewBottomSheetState extends State<MarkerViewBottomSheet> {
                   ),
                 ),
                 SizedBox(height: 0.05.sh),
-                const Center(child: CircularProgressIndicator()),
+                const Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF62A148)),
+                  ),
+                ),
                 SizedBox(height: 0.02.sh),
                 Center(
                   child: Text(
@@ -255,7 +259,9 @@ class _MarkerViewBottomSheetState extends State<MarkerViewBottomSheet> {
                 imageUrl: marker.imageUrl,
                 fit: BoxFit.cover,
                 placeholder: (context, url) => const Center(
-                  child: CircularProgressIndicator(),
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF62A148)),
+                  ),
                 ),
                 errorWidget: (context, url, error) => Center(
                   child: Icon(

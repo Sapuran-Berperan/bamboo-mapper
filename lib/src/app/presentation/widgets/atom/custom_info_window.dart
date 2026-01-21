@@ -78,7 +78,9 @@ class _CustomInfoWindowState extends State<CustomInfoWindow> {
           textAlign: TextAlign.center,
         ),
         SizedBox(height: 0.05.sh),
-        const CircularProgressIndicator(),
+        const CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF62A148)),
+        ),
         SizedBox(height: 0.02.sh),
         Text(
           'Memuat detail...',

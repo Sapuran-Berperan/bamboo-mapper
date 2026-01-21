@@ -256,6 +256,7 @@ class SyncButton extends StatelessWidget {
                   height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF62A148)),
                   ),
                 )
               : Icon(

@@ -11,6 +11,7 @@ class ImageSnippet extends StatelessWidget {
       onTap: () => showDialog(
         context: context,
         builder: (context) => Dialog(
+          backgroundColor: Colors.white,
           child: SizedBox(
             height: 0.8.sh,
             width: 0.8.sw,
@@ -35,6 +36,7 @@ class ImageSnippet extends StatelessWidget {
                   }
                   return Center(
                     child: CircularProgressIndicator(
+                      valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF62A148)),
                       value: loadingProgress.expectedTotalBytes != null
                           ? loadingProgress.cumulativeBytesLoaded /
                               (loadingProgress.expectedTotalBytes ?? 1)
