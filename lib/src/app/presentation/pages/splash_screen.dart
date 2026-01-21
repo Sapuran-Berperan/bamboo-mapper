@@ -61,6 +61,8 @@ class _SplashScreenPageState extends State<SplashScreenPage> {
       return;
     }
 
+    if (!mounted) return;
+
     final userBloc = context.read<UserLoggedStateBloc>();
     final authController = AuthController(userBloc: userBloc);
 

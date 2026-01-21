@@ -3,7 +3,6 @@ import 'package:bamboo_app/src/app/presentation/pages/login.dart';
 import 'package:bamboo_app/src/app/presentation/pages/onboarding.dart';
 import 'package:bamboo_app/src/app/presentation/pages/register.dart';
 import 'package:bamboo_app/src/app/presentation/pages/dashboard.dart';
-import 'package:bamboo_app/src/app/presentation/layout/auth_layout.dart';
 import 'package:bamboo_app/src/app/presentation/pages/splash_screen.dart';
 import 'package:bamboo_app/src/app/presentation/pages/welcome.dart';
 import 'package:flutter/material.dart';
