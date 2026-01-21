@@ -16,6 +16,7 @@ class ApiClient {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
         },
       ),
     );
@@ -113,6 +114,7 @@ class ApiClient {
         options: Options(
           contentType: 'multipart/form-data',
           headers: {
+            'ngrok-skip-browser-warning': 'true',
             if (_dio.options.headers['Authorization'] != null)
               'Authorization': _dio.options.headers['Authorization'],
           },
@@ -152,6 +154,7 @@ class ApiClient {
         options: Options(
           contentType: 'multipart/form-data',
           headers: {
+            'ngrok-skip-browser-warning': 'true',
             if (_dio.options.headers['Authorization'] != null)
               'Authorization': _dio.options.headers['Authorization'],
           },
