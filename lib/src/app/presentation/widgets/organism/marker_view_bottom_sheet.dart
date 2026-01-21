@@ -43,7 +43,7 @@ class _MarkerViewBottomSheetState extends State<MarkerViewBottomSheet> {
       builder: (context, scrollController) {
         return Container(
           decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
+            color: Colors.white,
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(16),
               topRight: Radius.circular(16),
@@ -113,10 +113,13 @@ class _MarkerViewBottomSheetState extends State<MarkerViewBottomSheet> {
                   ),
                 ),
                 SizedBox(height: 0.02.sh),
-                Center(
+                const Center(
                   child: Text(
                     'Memuat detail...',
-                    style: Theme.of(context).textTheme.bodySmall,
+                    style: TextStyle(
+                      color: Color(0xFF1E1E1E),
+                      fontSize: 12,
+                    ),
                   ),
                 ),
               ],
@@ -139,14 +142,20 @@ class _MarkerViewBottomSheetState extends State<MarkerViewBottomSheet> {
               children: [
                 const Icon(Icons.error_outline, size: 48, color: Colors.red),
                 SizedBox(height: 0.02.sh),
-                Text(
+                const Text(
                   'Gagal memuat detail',
-                  style: Theme.of(context).textTheme.bodyMedium,
+                  style: TextStyle(
+                    color: Color(0xFF1E1E1E),
+                    fontSize: 14,
+                  ),
                 ),
                 SizedBox(height: 0.01.sh),
                 Text(
                   error,
-                  style: Theme.of(context).textTheme.bodySmall,
+                  style: const TextStyle(
+                    color: Color(0xFF616161),
+                    fontSize: 12,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 SizedBox(height: 0.02.sh),
@@ -245,7 +254,7 @@ class _MarkerViewBottomSheetState extends State<MarkerViewBottomSheet> {
       width: double.infinity,
       height: 150,
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.secondary,
+        color: const Color(0xFFF5F5F5),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: const Color(0xFF375DFB).withValues(alpha: 0.3),
@@ -263,19 +272,19 @@ class _MarkerViewBottomSheetState extends State<MarkerViewBottomSheet> {
                     valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF62A148)),
                   ),
                 ),
-                errorWidget: (context, url, error) => Center(
+                errorWidget: (context, url, error) => const Center(
                   child: Icon(
                     Icons.camera_alt,
                     size: 64,
-                    color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
+                    color: Color(0xFF9E9E9E),
                   ),
                 ),
               )
-            : Center(
+            : const Center(
                 child: Icon(
                   Icons.camera_alt,
                   size: 64,
-                  color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
+                  color: Color(0xFF9E9E9E),
                 ),
               ),
       ),
@@ -287,7 +296,7 @@ class _MarkerViewBottomSheetState extends State<MarkerViewBottomSheet> {
       height: 50,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.secondary,
+        color: const Color(0xFFF5F5F5),
         borderRadius: BorderRadius.circular(7),
       ),
       child: Row(
@@ -295,10 +304,10 @@ class _MarkerViewBottomSheetState extends State<MarkerViewBottomSheet> {
           Expanded(
             child: Text(
               value,
-              style: TextStyle(
+              style: const TextStyle(
                 fontFamily: 'Poppins',
                 fontSize: 14,
-                color: Theme.of(context).textTheme.bodyMedium?.color,
+                color: Color(0xFF1E1E1E),
               ),
               overflow: TextOverflow.ellipsis,
             ),

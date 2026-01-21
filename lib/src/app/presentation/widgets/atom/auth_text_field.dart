@@ -36,6 +36,10 @@ class _AuthTextFieldState extends State<AuthTextField> {
         key: _formKey,
         keyboardType: widget.type,
         controller: widget.controller,
+        style: const TextStyle(
+          color: Color(0xFF1E1E1E),
+          fontSize: 14,
+        ),
         decoration: InputDecoration(
           focusColor: Colors.red,
           contentPadding: EdgeInsets.symmetric(
@@ -43,26 +47,33 @@ class _AuthTextFieldState extends State<AuthTextField> {
             vertical: 0.015.sh,
           ),
           hintText: widget.hintText,
-          hintStyle:
-              TextStyle(color: Theme.of(context).textTheme.bodyMedium!.color),
+          hintStyle: const TextStyle(
+            color: Color(0xFF9E9E9E),
+            fontSize: 14,
+          ),
           labelText: null,
           label: RichText(
             text: TextSpan(
               text: widget.label,
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: const TextStyle(
+                color: Color(0xFF616161),
+                fontSize: 14,
+              ),
               children: [
                 if (!widget.optional)
-                  TextSpan(
+                  const TextSpan(
                     text: ' (*)',
                     style: TextStyle(color: Colors.red),
                   ),
               ],
             ),
           ),
-          labelStyle:
-              TextStyle(color: Theme.of(context).textTheme.bodyMedium!.color),
+          labelStyle: const TextStyle(
+            color: Color(0xFF616161),
+            fontSize: 14,
+          ),
           filled: true,
-          fillColor: Theme.of(context).colorScheme.secondary,
+          fillColor: const Color(0xFFF5F5F5),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(7),
             borderSide: const BorderSide(color: Colors.transparent),

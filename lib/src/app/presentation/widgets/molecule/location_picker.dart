@@ -156,12 +156,12 @@ class _LocationPickerState extends State<LocationPicker> {
                   child: OutlinedButton.icon(
                     onPressed: _isLoadingGps ? null : _useCurrentLocation,
                     icon: _isLoadingGps
-                        ? SizedBox(
+                        ? const SizedBox(
                             width: 16,
                             height: 16,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: Theme.of(context).colorScheme.primary,
+                              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF62A148)),
                             ),
                           )
                         : const Icon(Icons.my_location, size: 18),
@@ -171,7 +171,8 @@ class _LocationPickerState extends State<LocationPicker> {
                     ),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      foregroundColor: Theme.of(context).textTheme.bodyMedium?.color,
+                      foregroundColor: const Color(0xFF1E1E1E),
+                      side: const BorderSide(color: Color(0xFFBDBDBD)),
                     ),
                   ),
                 ),
@@ -192,9 +193,10 @@ class _LocationPickerState extends State<LocationPicker> {
                     ),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      foregroundColor: Theme.of(context).textTheme.bodyMedium?.color,
+                      foregroundColor: const Color(0xFF1E1E1E),
+                      side: const BorderSide(color: Color(0xFFBDBDBD)),
                       backgroundColor: _isMapExpanded
-                          ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)
+                          ? const Color(0xFF62A148).withValues(alpha: 0.1)
                           : null,
                     ),
                   ),
@@ -212,11 +214,12 @@ class _LocationPickerState extends State<LocationPicker> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          const Text(
                             'Geser peta untuk memilih lokasi',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
-                                ),
+                            style: TextStyle(
+                              color: Color(0xFF616161),
+                              fontSize: 12,
+                            ),
                           ),
                           SizedBox(height: 8),
                           LocationPickerMap(

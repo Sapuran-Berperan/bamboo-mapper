@@ -383,7 +383,7 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
                 children: [
                   Container(
                     decoration: BoxDecoration(
-                      color: Theme.of(context).scaffoldBackgroundColor,
+                      color: Colors.white,
                       borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(16),
                         topRight: Radius.circular(16),
@@ -478,9 +478,12 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
             valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF62A148)),
           ),
           const SizedBox(height: 16),
-          Text(
+          const Text(
             'Memuat data...',
-            style: Theme.of(context).textTheme.bodyMedium,
+            style: TextStyle(
+              color: Color(0xFF1E1E1E),
+              fontSize: 14,
+            ),
           ),
         ],
       ),
@@ -496,10 +499,21 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
           SizedBox(height: 0.1.sh),
           const Icon(Icons.error_outline, size: 48, color: Colors.red),
           const SizedBox(height: 16),
-          const Text('Gagal memuat data'),
+          const Text(
+            'Gagal memuat data',
+            style: TextStyle(
+              color: Color(0xFF1E1E1E),
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
           const SizedBox(height: 8),
           ElevatedButton(
             onPressed: () => router.pop(),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Color(0xFF62A148),
+              foregroundColor: Colors.white,
+            ),
             child: const Text('Tutup'),
           ),
         ],
@@ -630,7 +644,7 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
         width: double.infinity,
         height: 150,
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.secondary,
+          color: const Color(0xFFF5F5F5),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: const Color(0xFF375DFB).withValues(alpha: 0.3),
@@ -645,7 +659,7 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
                   child: Icon(
                     Icons.camera_alt,
                     size: 64,
-                    color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
+                    color: const Color(0xFF9E9E9E),
                   ),
                 ),
         ),
@@ -699,11 +713,11 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
                 valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF62A148)),
               ),
             ),
-            errorWidget: (context, url, error) => Center(
+            errorWidget: (context, url, error) => const Center(
               child: Icon(
                 Icons.camera_alt,
                 size: 64,
-                color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
+                color: Color(0xFF9E9E9E),
               ),
             ),
           ),
@@ -740,16 +754,28 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
           child: Wrap(
             children: [
               ListTile(
-                leading: const Icon(Icons.camera_alt),
-                title: const Text('Ambil Foto'),
+                leading: const Icon(Icons.camera_alt, color: Color(0xFF1E1E1E)),
+                title: const Text(
+                  'Ambil Foto',
+                  style: TextStyle(
+                    color: Color(0xFF1E1E1E),
+                    fontSize: 14,
+                  ),
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   _pickImageFromCamera();
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.photo_library),
-                title: const Text('Pilih dari Galeri'),
+                leading: const Icon(Icons.photo_library, color: Color(0xFF1E1E1E)),
+                title: const Text(
+                  'Pilih dari Galeri',
+                  style: TextStyle(
+                    color: Color(0xFF1E1E1E),
+                    fontSize: 14,
+                  ),
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   _pickImageFromGallery();
