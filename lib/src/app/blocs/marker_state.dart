@@ -1,5 +1,6 @@
 import 'package:bamboo_app/src/domain/entities/e_marker.dart';
 import 'package:bamboo_app/src/domain/service/s_marker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 abstract class MarkerEvent {}
@@ -76,44 +77,65 @@ class MarkerStateBloc extends Bloc<MarkerEvent, MarkerState> {
     });
 
     on<AddMarkerData>((event, emit) async {
+      debugPrint('[MarkerBloc] Adding marker: ${event.marker.name}');
       emit(state.copyWith(status: MarkerStatus.adding));
       try {
+        debugPrint('[MarkerBloc] Calling service.addMarker...');
         await _service.addMarker(event.marker);
+        debugPrint('[MarkerBloc] Marker added, fetching updated list...');
         final markers = await _service.fetchListMarker();
+        debugPrint('[MarkerBloc] Fetched ${markers.length} markers');
         emit(state.copyWith(markers: markers, status: MarkerStatus.loaded));
+        debugPrint('[MarkerBloc] State emitted: loaded');
       } catch (e) {
+        debugPrint('[MarkerBloc] Error adding marker: $e');
         emit(state.copyWith(
           status: MarkerStatus.error,
           errorMessage: 'Gagal menambah data: ${e.toString()}',
         ));
+        debugPrint('[MarkerBloc] State emitted: error');
       }
     });
 
     on<UpdateMarkerData>((event, emit) async {
+      debugPrint('[MarkerBloc] Updating marker: ${event.marker.id}');
       emit(state.copyWith(status: MarkerStatus.updating));
       try {
+        debugPrint('[MarkerBloc] Calling service.updateMarker...');
         await _service.updateMarker(event.marker, keepExistingImage: event.keepExistingImage);
+        debugPrint('[MarkerBloc] Marker updated, fetching updated list...');
         final markers = await _service.fetchListMarker();
+        debugPrint('[MarkerBloc] Fetched ${markers.length} markers');
         emit(state.copyWith(markers: markers, status: MarkerStatus.loaded));
+        debugPrint('[MarkerBloc] State emitted: loaded');
       } catch (e) {
+        debugPrint('[MarkerBloc] Error updating marker: $e');
         emit(state.copyWith(
           status: MarkerStatus.error,
           errorMessage: 'Gagal mengupdate data: ${e.toString()}',
         ));
+        debugPrint('[MarkerBloc] State emitted: error');
       }
     });
 
     on<DeleteMarkerData>((event, emit) async {
+      debugPrint('[MarkerBloc] Deleting marker: ${event.marker.id}');
       emit(state.copyWith(status: MarkerStatus.deleting));
       try {
+        debugPrint('[MarkerBloc] Calling service.deleteMarker...');
         await _service.deleteMarker(event.marker);
+        debugPrint('[MarkerBloc] Marker deleted, fetching updated list...');
         final markers = await _service.fetchListMarker();
+        debugPrint('[MarkerBloc] Fetched ${markers.length} markers');
         emit(state.copyWith(markers: markers, status: MarkerStatus.loaded));
+        debugPrint('[MarkerBloc] State emitted: loaded');
       } catch (e) {
+        debugPrint('[MarkerBloc] Error deleting marker: $e');
         emit(state.copyWith(
           status: MarkerStatus.error,
           errorMessage: 'Gagal menghapus data: ${e.toString()}',
         ));
+        debugPrint('[MarkerBloc] State emitted: error');
       }
     });
   }

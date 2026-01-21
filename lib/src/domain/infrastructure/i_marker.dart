@@ -13,15 +13,18 @@ class InfrastructureMarker implements RepositoryPolygon {
   @override
   Future<EntitiesMarker?> createMarker(EntitiesMarker marker) async {
     try {
+      debugPrint('[MarkerInfra] Creating marker: ${marker.name}');
       // Check if image path is provided and valid
       String? imagePath;
       if (marker.imageUrl.isNotEmpty && !marker.imageUrl.startsWith('http')) {
         final file = File(marker.imageUrl);
         if (await file.exists()) {
           imagePath = marker.imageUrl;
+          debugPrint('[MarkerInfra] Image found at: $imagePath');
         }
       }
 
+      debugPrint('[MarkerInfra] Calling remote datasource...');
       final response = await _remoteDataSource.createMarker(
         name: marker.name,
         latitude: marker.location.latitude.toString(),
@@ -34,9 +37,11 @@ class InfrastructureMarker implements RepositoryPolygon {
         imagePath: imagePath,
       );
 
+      debugPrint('[MarkerInfra] Marker created successfully: ${response.id}');
       return EntitiesMarker.fromResponse(response);
     } catch (e) {
-      debugPrint('Error creating marker: $e');
+      debugPrint('[MarkerInfra] Error creating marker: $e');
+      debugPrint('[MarkerInfra] Error type: ${e.runtimeType}');
       rethrow;
     }
   }
@@ -55,33 +60,40 @@ class InfrastructureMarker implements RepositoryPolygon {
   @override
   Future<List<EntitiesMarker>> readListMarker() async {
     try {
+      debugPrint('[MarkerInfra] Fetching marker list...');
       final response = await _remoteDataSource.getAllMarkers();
+      debugPrint('[MarkerInfra] Received ${response.length} markers');
       return response.map((e) => EntitiesMarker.fromListResponse(e)).toList();
     } catch (e) {
-      debugPrint('Error reading marker list: $e');
-      return [];
+      debugPrint('[MarkerInfra] Error reading marker list: $e');
+      debugPrint('[MarkerInfra] Error type: ${e.runtimeType}');
+      rethrow; // Re-throw instead of returning empty list
     }
   }
 
   @override
   Future<EntitiesMarker?> updateMarker(EntitiesMarker marker, {bool keepExistingImage = false}) async {
     try {
+      debugPrint('[MarkerInfra] Updating marker: ${marker.id}');
       // Determine if we should upload a new image
       String? imagePath;
       if (!keepExistingImage && marker.imageUrl.isNotEmpty) {
         // Check for special prefix that indicates keeping existing image
         if (marker.imageUrl.startsWith('NULL:')) {
           // No new image, keep existing (don't send image field)
+          debugPrint('[MarkerInfra] Keeping existing image');
           imagePath = null;
         } else if (!marker.imageUrl.startsWith('http')) {
           // Local file path - upload new image
           final file = File(marker.imageUrl);
           if (await file.exists()) {
             imagePath = marker.imageUrl;
+            debugPrint('[MarkerInfra] New image found at: $imagePath');
           }
         }
       }
 
+      debugPrint('[MarkerInfra] Calling remote datasource for update...');
       final response = await _remoteDataSource.updateMarker(
         id: marker.id,
         name: marker.name,
@@ -95,9 +107,11 @@ class InfrastructureMarker implements RepositoryPolygon {
         imagePath: imagePath,
       );
 
+      debugPrint('[MarkerInfra] Marker updated successfully: ${response.id}');
       return EntitiesMarker.fromResponse(response);
     } catch (e) {
-      debugPrint('Error updating marker: $e');
+      debugPrint('[MarkerInfra] Error updating marker: $e');
+      debugPrint('[MarkerInfra] Error type: ${e.runtimeType}');
       rethrow;
     }
   }
@@ -105,9 +119,12 @@ class InfrastructureMarker implements RepositoryPolygon {
   @override
   Future<void> deleteMarker(EntitiesMarker marker) async {
     try {
+      debugPrint('[MarkerInfra] Deleting marker: ${marker.id}');
       await _remoteDataSource.deleteMarker(marker.id);
+      debugPrint('[MarkerInfra] Marker deleted successfully');
     } catch (e) {
-      debugPrint('Error deleting marker: $e');
+      debugPrint('[MarkerInfra] Error deleting marker: $e');
+      debugPrint('[MarkerInfra] Error type: ${e.runtimeType}');
       rethrow;
     }
   }
