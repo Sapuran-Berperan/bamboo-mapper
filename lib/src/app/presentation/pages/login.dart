@@ -299,24 +299,15 @@ class _LoginPageState extends State<LoginPage> {
                                         ),
                                         elevation: 0,
                                       ),
-                                      child: _isLoading
-                                          ? const SizedBox(
-                                              width: 20,
-                                              height: 20,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                                color: Colors.white,
-                                              ),
-                                            )
-                                          : const Text(
-                                              'Masuk',
-                                              style: TextStyle(
-                                                fontFamily: 'Poppins',
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w600,
-                                                letterSpacing: -0.14,
-                                              ),
-                                            ),
+                                      child: const Text(
+                                        'Masuk',
+                                        style: TextStyle(
+                                          fontFamily: 'Poppins',
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          letterSpacing: -0.14,
+                                        ),
+                                      ),
                                     ),
                                   ),
                                   const SizedBox(height: 24),
