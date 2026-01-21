@@ -144,32 +144,28 @@ class _LoginPageState extends State<LoginPage> {
                               key: _formKey,
                               child: Column(
                                 children: [
-                                  // Logo
-                                  SizedBox(
+                                  // Logo with circular background
+                                  Container(
                                     width: 80,
                                     height: 80,
-                                    child: Stack(
-                                      alignment: Alignment.center,
-                                      children: [
-                                        Positioned(
-                                          bottom: 0,
-                                          child: Image.asset(
-                                            'assets/images/splash_decoration.png',
-                                            width: 70,
-                                            height: 55,
-                                            fit: BoxFit.contain,
-                                          ),
-                                        ),
-                                        Positioned(
-                                          top: 0,
-                                          child: Image.asset(
-                                            'assets/images/splash_logo.png',
-                                            width: 70,
-                                            height: 67,
-                                            fit: BoxFit.contain,
-                                          ),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: const Color(0xFFFFF4D6), // Cream/yellow background
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withValues(alpha: 0.1),
+                                          blurRadius: 10,
+                                          offset: const Offset(0, 2),
                                         ),
                                       ],
+                                    ),
+                                    child: Center(
+                                      child: Image.asset(
+                                        'assets/images/splash_logo.png',
+                                        width: 70,
+                                        height: 67,
+                                        fit: BoxFit.contain,
+                                      ),
                                     ),
                                   ),
                                   const SizedBox(height: 24),

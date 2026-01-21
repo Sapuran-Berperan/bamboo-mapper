@@ -96,34 +96,28 @@ class _SplashScreenPageState extends State<SplashScreenPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Spacer(flex: 2),
-              // Logo with decoration
-              SizedBox(
+              // Logo with circular background
+              Container(
                 width: 160,
                 height: 160,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // Decoration behind logo
-                    Positioned(
-                      bottom: 0,
-                      child: Image.asset(
-                        'assets/images/splash_decoration.png',
-                        width: 140,
-                        height: 110,
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                    // Main logo
-                    Positioned(
-                      top: 0,
-                      child: Image.asset(
-                        'assets/images/splash_logo.png',
-                        width: 140,
-                        height: 135,
-                        fit: BoxFit.contain,
-                      ),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFFFFF4D6), // Cream/yellow background
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 20,
+                      offset: const Offset(0, 4),
                     ),
                   ],
+                ),
+                child: Center(
+                  child: Image.asset(
+                    'assets/images/splash_logo.png',
+                    width: 140,
+                    height: 135,
+                    fit: BoxFit.contain,
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
