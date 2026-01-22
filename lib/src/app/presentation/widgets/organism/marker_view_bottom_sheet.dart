@@ -223,6 +223,33 @@ class _MarkerViewBottomSheetState extends State<MarkerViewBottomSheet> {
                     ),
                   ],
                 ),
+                SizedBox(height: 0.015.sh),
+
+                // Description
+                _buildReadOnlyField(
+                  'Deskripsi',
+                  marker.description.isNotEmpty ? marker.description : '-',
+                ),
+                SizedBox(height: 0.015.sh),
+
+                // Owner Name & Contact
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildReadOnlyField(
+                        'Nama Pemilik',
+                        marker.ownerName.isNotEmpty ? marker.ownerName : '-',
+                      ),
+                    ),
+                    SizedBox(width: 0.04.sw),
+                    Expanded(
+                      child: _buildReadOnlyField(
+                        'Kontak Pemilik',
+                        marker.ownerContact.isNotEmpty ? marker.ownerContact : '-',
+                      ),
+                    ),
+                  ],
+                ),
                 SizedBox(height: 0.02.sh),
 
                 // Edit Data Button
@@ -277,28 +304,55 @@ class _MarkerViewBottomSheetState extends State<MarkerViewBottomSheet> {
   }
 
   Widget _buildReadOnlyField(String label, String value, {bool isRequired = false}) {
-    return Container(
-      height: 50,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.secondary,
-        borderRadius: BorderRadius.circular(7),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              value,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              label,
               style: TextStyle(
                 fontFamily: 'Poppins',
-                fontSize: 14,
-                color: Theme.of(context).textTheme.bodyMedium?.color,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
               ),
-              overflow: TextOverflow.ellipsis,
             ),
+            if (isRequired)
+              const Text(
+                ' *',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontSize: 12,
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Container(
+          height: 50,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.secondary,
+            borderRadius: BorderRadius.circular(7),
           ),
-        ],
-      ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  value,
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 14,
+                    color: Theme.of(context).textTheme.bodyMedium?.color,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
