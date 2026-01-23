@@ -178,8 +178,13 @@ class _MarkerViewBottomSheetState extends State<MarkerViewBottomSheet> {
                 ),
                 SizedBox(height: 0.015.sh),
 
-                // Image
-                _buildImageSection(marker),
+                // Image (tap to view full size)
+                GestureDetector(
+                  onTap: marker.imageUrl.isNotEmpty
+                      ? () => _showImagePopup(context, marker.imageUrl)
+                      : null,
+                  child: _buildImageSection(marker),
+                ),
                 SizedBox(height: 0.015.sh),
 
                 // Latitude & Longitude
@@ -393,6 +398,74 @@ class _MarkerViewBottomSheetState extends State<MarkerViewBottomSheet> {
           ),
         ),
       ),
+    );
+  }
+
+  void _showImagePopup(BuildContext context, String imageUrl) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext dialogContext) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.all(10),
+          child: Stack(
+            children: [
+              GestureDetector(
+                onTap: () => Navigator.of(dialogContext).pop(),
+                child: Container(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(dialogContext).size.height * 0.8,
+                    maxWidth: MediaQuery.of(dialogContext).size.width * 0.9,
+                  ),
+                  child: InteractiveViewer(
+                    minScale: 0.5,
+                    maxScale: 4.0,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: CachedNetworkImage(
+                        imageUrl: imageUrl,
+                        fit: BoxFit.contain,
+                        placeholder: (context, url) => const Center(
+                          child: CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        ),
+                        errorWidget: (context, url, error) => const Center(
+                          child: Icon(
+                            Icons.error_outline,
+                            size: 64,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 0,
+                right: 0,
+                child: IconButton(
+                  icon: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.5),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
