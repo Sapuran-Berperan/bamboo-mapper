@@ -183,7 +183,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 ),
                 // Floating buttons (My Location + Add)
                 Positioned(
-                  bottom: 20,
+                  bottom: MediaQuery.of(context).padding.bottom + 20,
                   right: 20,
                   child: FloatingMapButton(
                     controller: _mapController,
