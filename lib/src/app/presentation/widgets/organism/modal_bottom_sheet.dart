@@ -373,85 +373,130 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
       child: BlocConsumer<MarkerStateBloc, MarkerState>(
         listener: _handleStateChange,
         builder: (context, state) {
-          return DraggableScrollableSheet(
-            initialChildSize: 0.85,
-            minChildSize: 0.5,
-            maxChildSize: 0.95,
-            expand: false,
-            builder: (context, scrollController) {
-              return Stack(
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(16),
-                        topRight: Radius.circular(16),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.1),
-                          blurRadius: 20,
-                          offset: const Offset(-10, 4),
-                        ),
-                      ],
-                    ),
-                    child: FutureBuilder<EntitiesMarker>(
-                      future: _markerFuture,
-                      builder: (context, snapshot) {
-                        if (_isEditMode && snapshot.connectionState == ConnectionState.waiting) {
-                          return _buildLoadingState(scrollController);
-                        } else if (_isEditMode && snapshot.hasError) {
-                          return _buildErrorState(scrollController, snapshot.error.toString());
-                        } else if (_isEditMode && snapshot.hasData) {
-                          return _buildContent(context, scrollController, snapshot.data!);
-                        }
-                        return _buildContent(context, scrollController, null);
-                      },
-                    ),
-                  ),
-                  if (_isSubmitting)
-                    Positioned.fill(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.6),
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(16),
-                            topRight: Radius.circular(16),
-                          ),
-                        ),
-                        child: Center(
-                          child: Card(
-                            color: Colors.white,
-                            child: Padding(
-                              padding: const EdgeInsets.all(24),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const CircularProgressIndicator(
-                                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF62A148)),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    _getLoadingMessage(),
-                                    style: const TextStyle(
-                                      color: Color(0xFF1E1E1E),
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ],
+          // If in edit mode, wait for data to load before showing modal
+          if (_isEditMode && _markerFuture != null) {
+            return FutureBuilder<EntitiesMarker>(
+              future: _markerFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  // Show loading indicator centered on screen
+                  return Container(
+                    color: Colors.black.withValues(alpha: 0.3),
+                    child: Center(
+                      child: Card(
+                        color: Colors.white,
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF62A148)),
                               ),
-                            ),
+                              const SizedBox(height: 16),
+                              const Text(
+                                'Memuat data...',
+                                style: TextStyle(
+                                  color: Color(0xFF1E1E1E),
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
                     ),
-                ],
-              );
-            },
-          );
+                  );
+                } else if (snapshot.hasError) {
+                  // Show error state
+                  return _buildModalSheet(
+                    context,
+                    state,
+                    errorMessage: snapshot.error.toString(),
+                  );
+                } else if (snapshot.hasData) {
+                  // Data loaded, show the modal
+                  return _buildModalSheet(context, state, marker: snapshot.data);
+                }
+                return Container();
+              },
+            );
+          }
+
+          // For add mode, show modal immediately
+          return _buildModalSheet(context, state);
         },
       ),
+    );
+  }
+
+  Widget _buildModalSheet(BuildContext context, MarkerState state, {EntitiesMarker? marker, String? errorMessage}) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.92,
+      minChildSize: 0.7,
+      maxChildSize: 0.95,
+      expand: false,
+      builder: (context, scrollController) {
+        return Stack(
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 20,
+                    offset: const Offset(-10, 4),
+                  ),
+                ],
+              ),
+              child: errorMessage != null
+                  ? _buildErrorState(scrollController, errorMessage)
+                  : _buildContent(context, scrollController, marker),
+            ),
+            if (_isSubmitting)
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.6),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
+                    ),
+                  ),
+                  child: Center(
+                    child: Card(
+                      color: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF62A148)),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              _getLoadingMessage(),
+                              style: const TextStyle(
+                                color: Color(0xFF1E1E1E),
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 
