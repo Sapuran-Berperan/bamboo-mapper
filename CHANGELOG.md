@@ -2,6 +2,18 @@
 
 All notable changes to Bamboo Mapper will be documented in this file.
 
+## [2.0.0] - 2026-01-30
+
+### Added
+- Offline mode feature: Full offline functionality with local database sync
+- UI redesign: Enhanced user interface with improved contrast and readability
+- Improved modal loading behavior: Edit modal now displays only after data is loaded
+
+### Changed
+- Improved text contrast in view modal for better readability
+- Optimized modal sizes for better user experience
+- Enhanced label and input field color scheme
+
 ## [1.0.1] - 2026-01-12
 
 ### Added
