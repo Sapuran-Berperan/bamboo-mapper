@@ -638,6 +638,7 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
   Widget _buildImageUploadSection() {
     final hasImage = _image != null || (_existingImageUrl != null && _existingImageUrl!.isNotEmpty);
 
+<<<<<<< HEAD
     return GestureDetector(
       onTap: _showImagePickerOptions,
       child: Container(
@@ -650,58 +651,100 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
             color: const Color(0xFF375DFB).withValues(alpha: 0.3),
             width: 1,
           ),
+=======
+    return Container(
+      width: double.infinity,
+      height: 150,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.secondary,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: const Color(0xFF375DFB).withValues(alpha: 0.3),
+          width: 1,
+>>>>>>> 0359c7e85bf4a54253efa92d72ea19b1ab2f8801
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(10),
-          child: hasImage
-              ? _buildImagePreview()
-              : Center(
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: hasImage
+            ? _buildImagePreview()
+            : GestureDetector(
+                onTap: _showImagePickerOptions,
+                child: Center(
                   child: Icon(
                     Icons.camera_alt,
                     size: 64,
                     color: const Color(0xFF9E9E9E),
                   ),
                 ),
-        ),
+              ),
       ),
     );
   }
 
   Widget _buildImagePreview() {
     if (_image != null) {
-      return Stack(
-        fit: StackFit.expand,
-        children: [
-          Image.file(
-            _image!,
-            fit: BoxFit.cover,
-          ),
-          Positioned(
-            top: 8,
-            right: 8,
-            child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _image = null;
-                });
-              },
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.5),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.close,
-                  color: Colors.white,
-                  size: 20,
+      return GestureDetector(
+        onTap: () => _showLocalImagePopup(context, _image!),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.file(
+              _image!,
+              fit: BoxFit.cover,
+            ),
+            Positioned(
+              top: 8,
+              right: 8,
+              child: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _image = null;
+                  });
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.5),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.close,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+            Positioned(
+              bottom: 8,
+              left: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.zoom_in, color: Colors.white, size: 16),
+                    SizedBox(width: 4),
+                    Text(
+                      'Tap untuk zoom',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       );
     } else if (_existingImageUrl != null && _existingImageUrl!.isNotEmpty) {
+<<<<<<< HEAD
       return Stack(
         fit: StackFit.expand,
         children: [
@@ -718,28 +761,80 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
                 Icons.camera_alt,
                 size: 64,
                 color: Color(0xFF9E9E9E),
+=======
+      return GestureDetector(
+        onTap: () => _showNetworkImagePopup(context, _existingImageUrl!),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            CachedNetworkImage(
+              imageUrl: _existingImageUrl!,
+              fit: BoxFit.cover,
+              placeholder: (context, url) => const Center(
+                child: CircularProgressIndicator(),
+>>>>>>> 0359c7e85bf4a54253efa92d72ea19b1ab2f8801
               ),
-            ),
-          ),
-          Positioned(
-            bottom: 8,
-            right: 8,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: const Text(
-                'Tap untuk ganti',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
+              errorWidget: (context, url, error) => Center(
+                child: Icon(
+                  Icons.camera_alt,
+                  size: 64,
+                  color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
                 ),
               ),
             ),
-          ),
-        ],
+            Positioned(
+              bottom: 8,
+              left: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.zoom_in, color: Colors.white, size: 16),
+                    SizedBox(width: 4),
+                    Text(
+                      'Tap untuk zoom',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: 8,
+              right: 8,
+              child: GestureDetector(
+                onTap: _showImagePickerOptions,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.edit, color: Colors.white, size: 16),
+                      SizedBox(width: 4),
+                      Text(
+                        'Ganti',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       );
     }
     return const SizedBox();
@@ -847,6 +942,130 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
           ),
         ],
       ],
+    );
+  }
+
+  void _showLocalImagePopup(BuildContext context, File imageFile) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext dialogContext) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.all(10),
+          child: Stack(
+            children: [
+              GestureDetector(
+                onTap: () => Navigator.of(dialogContext).pop(),
+                child: Container(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(dialogContext).size.height * 0.8,
+                    maxWidth: MediaQuery.of(dialogContext).size.width * 0.9,
+                  ),
+                  child: InteractiveViewer(
+                    minScale: 0.5,
+                    maxScale: 4.0,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.file(
+                        imageFile,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 0,
+                right: 0,
+                child: IconButton(
+                  icon: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.5),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showNetworkImagePopup(BuildContext context, String imageUrl) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext dialogContext) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.all(10),
+          child: Stack(
+            children: [
+              GestureDetector(
+                onTap: () => Navigator.of(dialogContext).pop(),
+                child: Container(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(dialogContext).size.height * 0.8,
+                    maxWidth: MediaQuery.of(dialogContext).size.width * 0.9,
+                  ),
+                  child: InteractiveViewer(
+                    minScale: 0.5,
+                    maxScale: 4.0,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: CachedNetworkImage(
+                        imageUrl: imageUrl,
+                        fit: BoxFit.contain,
+                        placeholder: (context, url) => const Center(
+                          child: CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        ),
+                        errorWidget: (context, url, error) => const Center(
+                          child: Icon(
+                            Icons.error_outline,
+                            size: 64,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 0,
+                right: 0,
+                child: IconButton(
+                  icon: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.5),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
