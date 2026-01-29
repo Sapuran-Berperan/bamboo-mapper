@@ -191,8 +191,13 @@ class _MarkerViewBottomSheetState extends State<MarkerViewBottomSheet> {
                 ),
                 SizedBox(height: 0.015.sh),
 
-                // Image
-                _buildImageSection(marker),
+                // Image (tap to view full size)
+                GestureDetector(
+                  onTap: marker.imageUrl.isNotEmpty
+                      ? () => _showImagePopup(context, marker.imageUrl)
+                      : null,
+                  child: _buildImageSection(marker),
+                ),
                 SizedBox(height: 0.015.sh),
 
                 // Latitude & Longitude
@@ -232,6 +237,33 @@ class _MarkerViewBottomSheetState extends State<MarkerViewBottomSheet> {
                       child: _buildReadOnlyField(
                         'Jumlah',
                         marker.quantity > 0 ? marker.quantity.toString() : '-',
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 0.015.sh),
+
+                // Description
+                _buildReadOnlyField(
+                  'Deskripsi',
+                  marker.description.isNotEmpty ? marker.description : '-',
+                ),
+                SizedBox(height: 0.015.sh),
+
+                // Owner Name & Contact
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildReadOnlyField(
+                        'Nama Pemilik',
+                        marker.ownerName.isNotEmpty ? marker.ownerName : '-',
+                      ),
+                    ),
+                    SizedBox(width: 0.04.sw),
+                    Expanded(
+                      child: _buildReadOnlyField(
+                        'Kontak Pemilik',
+                        marker.ownerContact.isNotEmpty ? marker.ownerContact : '-',
                       ),
                     ),
                   ],
@@ -292,6 +324,7 @@ class _MarkerViewBottomSheetState extends State<MarkerViewBottomSheet> {
   }
 
   Widget _buildReadOnlyField(String label, String value, {bool isRequired = false}) {
+<<<<<<< HEAD
     return Container(
       height: 50,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
@@ -308,12 +341,57 @@ class _MarkerViewBottomSheetState extends State<MarkerViewBottomSheet> {
                 fontFamily: 'Poppins',
                 fontSize: 14,
                 color: Color(0xFF1E1E1E),
+=======
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+>>>>>>> 0359c7e85bf4a54253efa92d72ea19b1ab2f8801
               ),
-              overflow: TextOverflow.ellipsis,
             ),
+            if (isRequired)
+              const Text(
+                ' *',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontSize: 12,
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Container(
+          height: 50,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.secondary,
+            borderRadius: BorderRadius.circular(7),
           ),
-        ],
-      ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  value,
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 14,
+                    color: Theme.of(context).textTheme.bodyMedium?.color,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -354,6 +432,74 @@ class _MarkerViewBottomSheetState extends State<MarkerViewBottomSheet> {
           ),
         ),
       ),
+    );
+  }
+
+  void _showImagePopup(BuildContext context, String imageUrl) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext dialogContext) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.all(10),
+          child: Stack(
+            children: [
+              GestureDetector(
+                onTap: () => Navigator.of(dialogContext).pop(),
+                child: Container(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(dialogContext).size.height * 0.8,
+                    maxWidth: MediaQuery.of(dialogContext).size.width * 0.9,
+                  ),
+                  child: InteractiveViewer(
+                    minScale: 0.5,
+                    maxScale: 4.0,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: CachedNetworkImage(
+                        imageUrl: imageUrl,
+                        fit: BoxFit.contain,
+                        placeholder: (context, url) => const Center(
+                          child: CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        ),
+                        errorWidget: (context, url, error) => const Center(
+                          child: Icon(
+                            Icons.error_outline,
+                            size: 64,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 0,
+                right: 0,
+                child: IconButton(
+                  icon: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.5),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
