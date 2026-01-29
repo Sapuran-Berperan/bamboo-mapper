@@ -331,11 +331,11 @@ class _MarkerViewBottomSheetState extends State<MarkerViewBottomSheet> {
           children: [
             Text(
               label,
-              style: TextStyle(
+              style: const TextStyle(
                 fontFamily: 'Poppins',
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
-                color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+                color: Color(0xFF424242),
               ),
             ),
             if (isRequired)
@@ -361,10 +361,10 @@ class _MarkerViewBottomSheetState extends State<MarkerViewBottomSheet> {
               Expanded(
                 child: Text(
                   value,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 14,
-                    color: Theme.of(context).textTheme.bodyMedium?.color,
+                    color: Colors.white,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
