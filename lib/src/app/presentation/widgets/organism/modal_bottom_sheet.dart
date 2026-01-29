@@ -512,29 +512,6 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
     );
   }
 
-  Widget _buildLoadingState(ScrollController scrollController) {
-    return SingleChildScrollView(
-      controller: scrollController,
-      child: Column(
-        children: [
-          _buildDragHandle(),
-          SizedBox(height: 0.2.sh),
-          const CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF62A148)),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Memuat data...',
-            style: TextStyle(
-              color: Color(0xFF1E1E1E),
-              fontSize: 14,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildErrorState(ScrollController scrollController, String error) {
     return SingleChildScrollView(
       controller: scrollController,
