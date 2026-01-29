@@ -324,24 +324,6 @@ class _MarkerViewBottomSheetState extends State<MarkerViewBottomSheet> {
   }
 
   Widget _buildReadOnlyField(String label, String value, {bool isRequired = false}) {
-<<<<<<< HEAD
-    return Container(
-      height: 50,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF5F5F5),
-        borderRadius: BorderRadius.circular(7),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 14,
-                color: Color(0xFF1E1E1E),
-=======
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -354,7 +336,6 @@ class _MarkerViewBottomSheetState extends State<MarkerViewBottomSheet> {
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
                 color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
->>>>>>> 0359c7e85bf4a54253efa92d72ea19b1ab2f8801
               ),
             ),
             if (isRequired)

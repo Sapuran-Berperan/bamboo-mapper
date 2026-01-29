@@ -638,20 +638,6 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
   Widget _buildImageUploadSection() {
     final hasImage = _image != null || (_existingImageUrl != null && _existingImageUrl!.isNotEmpty);
 
-<<<<<<< HEAD
-    return GestureDetector(
-      onTap: _showImagePickerOptions,
-      child: Container(
-        width: double.infinity,
-        height: 150,
-        decoration: BoxDecoration(
-          color: const Color(0xFFF5F5F5),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: const Color(0xFF375DFB).withValues(alpha: 0.3),
-            width: 1,
-          ),
-=======
     return Container(
       width: double.infinity,
       height: 150,
@@ -661,7 +647,6 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
         border: Border.all(
           color: const Color(0xFF375DFB).withValues(alpha: 0.3),
           width: 1,
->>>>>>> 0359c7e85bf4a54253efa92d72ea19b1ab2f8801
         ),
       ),
       child: ClipRRect(
@@ -744,24 +729,6 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
         ),
       );
     } else if (_existingImageUrl != null && _existingImageUrl!.isNotEmpty) {
-<<<<<<< HEAD
-      return Stack(
-        fit: StackFit.expand,
-        children: [
-          CachedNetworkImage(
-            imageUrl: _existingImageUrl!,
-            fit: BoxFit.cover,
-            placeholder: (context, url) => const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF62A148)),
-              ),
-            ),
-            errorWidget: (context, url, error) => const Center(
-              child: Icon(
-                Icons.camera_alt,
-                size: 64,
-                color: Color(0xFF9E9E9E),
-=======
       return GestureDetector(
         onTap: () => _showNetworkImagePopup(context, _existingImageUrl!),
         child: Stack(
@@ -771,8 +738,9 @@ class _ModalBottomSheetState extends State<ModalBottomSheet> {
               imageUrl: _existingImageUrl!,
               fit: BoxFit.cover,
               placeholder: (context, url) => const Center(
-                child: CircularProgressIndicator(),
->>>>>>> 0359c7e85bf4a54253efa92d72ea19b1ab2f8801
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF62A148)),
+                ),
               ),
               errorWidget: (context, url, error) => Center(
                 child: Icon(
